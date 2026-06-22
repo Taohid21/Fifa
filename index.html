@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fifa live</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'Hind Siliguri', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icon 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- HLS.js for Streaming -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    <style>
+        body {
+            font-family: 'Poppins', 'Hind Siliguri', sans-serif;
+            background-color: #060913;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        /* Animation for Messages */
+        @keyframes popUp {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animated-message {
+            animation: popUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Pulse Ring for Live Indicator */
+        .live-glow {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: livePulse 1.8s infinite;
+        }
+        @keyframes livePulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Premium Custom Video Player -->
+    <div class="w-full bg-black aspect-video max-h-[50vh] relative group flex items-center justify-center overflow-hidden border-b border-slate-900 shadow-2xl">
+        <!-- Loader -->
+        <div id="player-loader" class="absolute z-10 flex flex-col items-center gap-2 bg-slate-950/80 p-5 rounded-2xl border border-slate-800/60 backdrop-blur-md">
+            <i class="fas fa-spinner fa-spin text-3xl text-emerald-500"></i>
+            <span class="text-xs text-emerald-400 font-semibold">স্ট্রীম সংযোগ হচ্ছে...</span>
+        </div>
+
+        <!-- iframe Source -->
+        <iframe id="iframe-player" class="w-full h-full hidden" allowfullscreen frameborder="0" allow="autoplay; encrypted-media"></iframe>
+
+        <!-- Native HTML5 Video -->
+        <video id="video-player" class="w-full h-full hidden object-contain" playsinline></video>
+
+        <!-- Dynamic Control Overlay for direct streams -->
+        <div id="custom-controls" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col gap-2 z-10 hidden">
+            <div class="w-full bg-slate-800/80 h-1 rounded-full cursor-pointer relative" id="progress-container">
+                <div id="progress-bar" class="bg-emerald-500 h-full w-0 transition-all duration-100"></div>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button id="play-pause-btn" class="hover:text-emerald-400 transition text-sm"><i class="fas fa-play"></i></button>
+                    <button id="mute-btn" class="hover:text-emerald-400 transition text-sm"><i class="fas fa-volume-up"></i></button>
+                    <div class="text-[10px] text-slate-300 font-mono" id="time-display">00:00 / 00:00</div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-[9px] bg-emerald-500 text-slate-950 px-2.5 py-0.5 rounded-full font-extrabold tracking-wider live-glow flex items-center gap-1"><span class="w-1 h-1 bg-slate-950 rounded-full animate-ping"></span> LIVE</span>
+                    <button id="fullscreen-btn" class="hover:text-emerald-400 transition text-sm"><i class="fas fa-expand"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Server Selection (যা অ্যাডমিন প্যানেল থেকে ইনপুট হবে) -->
+    <div class="bg-slate-900/40 py-2.5 px-4 flex flex-wrap gap-3 items-center justify-center border-b border-slate-900/80 backdrop-blur-md">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+            <i class="fas fa-server text-emerald-500"></i> সার্ভার সুইচ করুন:
+        </span>
+        <div id="server-list" class="flex gap-2 flex-wrap">
+            <!-- Dynamic Server Buttons -->
+        </div>
+    </div>
+
+    <!-- Interface Workspace Grid -->
+    <div class="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto p-4 gap-6">
+        
+        <!-- Left: Match Pole and Avatar Customizer -->
+        <div class="flex-1 flex flex-col gap-4">
+            <div class="bg-slate-900/50 p-5 rounded-2xl shadow-xl border border-slate-800/80 backdrop-blur-md">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+                    
+                    <!-- Avatar config -->
+                    <div class="flex items-center gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 w-full sm:w-auto">
+                        <div class="relative flex-shrink-0">
+                            <img id="user-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Guest" class="w-11 h-11 rounded-full border-2 border-emerald-500/50 bg-slate-800" alt="Avatar">
+                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-950"></span>
+                        </div>
+                        <div>
+                            <input id="username-input" type="text" value="ইউজার" class="bg-transparent border-b border-slate-800 focus:border-emerald-500 text-xs font-bold text-slate-200 focus:outline-none py-0.5 w-24">
+                            <p class="text-[9px] text-slate-500 mt-1">নাম এডিট করতে এখানে লিখুন</p>
+                        </div>
+                    </div>
+
+                    <!-- Beautiful Glossy Circular Flags Vote Poll -->
+                    <div class="flex-1 w-full bg-slate-950/40 p-4 rounded-xl border border-slate-800/80">
+                        <div class="text-center text-[10px] font-bold text-slate-400 mb-3 tracking-widest uppercase">কাকে সাপোর্ট করছেন? ক্লিক করে ভোট দিন</div>
+                        <div class="flex items-center justify-between gap-4">
+                            <!-- Team 1 Option -->
+                            <button id="vote-team1-btn" class="group flex flex-col items-center gap-1 flex-1 focus:outline-none">
+                                <div class="relative w-12 h-12 rounded-full overflow-hidden border-2 border-cyan-500/80 shadow-lg group-hover:scale-110 active:scale-95 transition-all duration-300">
+                                    <img id="team1-flag" src="https://flagcdn.com/w160/ar.png" class="w-full h-full object-cover" alt="T1">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                                </div>
+                                <span id="team1-name" class="text-[11px] font-bold text-slate-300 mt-1">আর্জেন্টিনা</span>
+                            </button>
+
+                            <!-- Live Progress track -->
+                            <div class="flex-1 flex flex-col items-center">
+                                <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex border border-slate-800">
+                                    <div id="team1-bar" class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full transition-all duration-700 ease-out" style="width: 50%"></div>
+                                    <div id="team2-bar" class="bg-gradient-to-l from-red-500 to-amber-500 h-full transition-all duration-700 ease-out" style="width: 50%"></div>
+                                </div>
+                                <div class="flex justify-between w-full text-[9px] mt-1.5 font-bold tracking-wider">
+                                    <span id="team1-percent" class="text-cyan-400">50%</span>
+                                    <span id="team2-percent" class="text-amber-400">50%</span>
+                                </div>
+                            </div>
+
+                            <!-- Team 2 Option -->
+                            <button id="vote-team2-btn" class="group flex flex-col items-center gap-1 flex-1 focus:outline-none">
+                                <div class="relative w-12 h-12 rounded-full overflow-hidden border-2 border-red-500/80 shadow-lg group-hover:scale-110 active:scale-95 transition-all duration-300">
+                                    <img id="team2-flag" src="https://flagcdn.com/w160/at.png" class="w-full h-full object-cover" alt="T2">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                                </div>
+                                <span id="team2-name" class="text-[11px] font-bold text-slate-300 mt-1">অস্ট্রিয়া</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Realtime Animated Glassmorphic Live Chat Box -->
+        <div class="w-full lg:w-[380px] flex flex-col bg-slate-900/40 rounded-2xl shadow-2xl border border-slate-800/80 overflow-hidden h-[480px] backdrop-blur-md">
+            <!-- Header Status -->
+            <div class="bg-slate-950/60 px-4 py-3 border-b border-slate-800/60 flex justify-between items-center">
+                <span class="font-bold text-[11px] tracking-widest text-slate-400 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> লাইভ আড্ডা
+                </span>
+                <span id="online-counter" class="text-[9px] bg-slate-900 px-2 py-0.5 rounded text-slate-400 border border-slate-800 font-semibold">কানেক্ট হচ্ছে...</span>
+            </div>
+
+            <!-- Scrollable Chats -->
+            <div id="chat-messages" class="flex-1 p-3.5 overflow-y-auto space-y-3">
+                <!-- Message Elements -->
+            </div>
+
+            <!-- Typing indicator -->
+            <div id="typing-indicator" class="px-4 py-1.5 text-[10px] text-emerald-400 italic hidden bg-slate-950/30 border-t border-slate-900 flex items-center gap-1.5">
+                <span id="typing-user" class="font-semibold"></span> টাইপ করছেন...
+            </div>
+
+            <!-- Reply Panel -->
+            <div id="reply-preview" class="bg-slate-950 px-4 py-2 border-t border-slate-800 text-[11px] hidden flex justify-between items-center">
+                <div class="truncate text-slate-300">
+                    <i class="fas fa-reply text-emerald-500 mr-1"></i> <span id="reply-target-user" class="font-bold"></span>: 
+                    <span id="reply-target-text" class="italic opacity-80"></span>
+                </div>
+                <button onclick="cancelReply()" class="text-rose-500 hover:text-rose-400 flex-shrink-0 ml-2"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Action Input Bar (Fixed to prevent layout shrinking) -->
+            <div class="p-2.5 bg-slate-950/80 border-t border-slate-900 flex flex-col gap-1.5">
+                <div class="flex items-center gap-1.5 bg-slate-900/90 rounded-full px-3 py-1.5 border border-slate-800">
+                    <!-- Photo Uploder -->
+                    <label class="flex-shrink-0 cursor-pointer text-slate-400 hover:text-emerald-500 w-7 h-7 flex items-center justify-center transition-colors">
+                        <i class="fas fa-image text-sm"></i>
+                        <input id="chat-image-input" type="file" accept="image/*" class="hidden">
+                    </label>
+
+                    <!-- Voice Memo -->
+                    <button id="voice-record-btn" class="flex-shrink-0 text-slate-400 hover:text-rose-500 w-7 h-7 flex items-center justify-center transition-colors">
+                        <i id="voice-icon" class="fas fa-microphone text-sm"></i>
+                    </button>
+
+                    <!-- Message Field -->
+                    <input id="chat-text-input" type="text" placeholder="কিছু লিখুন..." class="flex-1 bg-transparent text-slate-200 placeholder-slate-500 text-xs focus:outline-none min-w-0 px-1">
+
+                    <!-- Send Button (Stays intact and never shrinks) -->
+                    <button id="send-btn" class="flex-shrink-0 bg-emerald-500 text-slate-950 rounded-full w-7 h-7 flex items-center justify-center hover:bg-emerald-400 active:scale-95 transition shadow-lg">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_HBGuQSh_GzqrHqHbgdaoBikLZsK3Qqs",
+            authDomain: "new-all-f99f7.firebaseapp.com",
+            databaseURL: "https://new-all-f99f7-default-rtdb.firebaseio.com",
+            projectId: "new-all-f99f7",
+            storageBucket: "new-all-f99f7.firebasestorage.app",
+            messagingSenderId: "1069748173900",
+            appId: "1:1069748173900:web:158d6336c0f4628133c8e9",
+            measurementId: "G-V6DZ37WSBF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        // ImgBB API key
+        const IMGBB_API_KEY = "4f29b88d8207f6e762c2c852d5c895f8";
+
+        // Generate Identity
+        let userId = localStorage.getItem('chat_user_id') || 'usr_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('chat_user_id', userId);
+        
+        let username = localStorage.getItem('chat_username') || 'অতিথি_' + Math.floor(1000 + Math.random() * 9000);
+        let userAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+        
+        document.getElementById('username-input').value = username;
+        document.getElementById('user-avatar').src = userAvatar;
+
+        document.getElementById('username-input').addEventListener('change', (e) => {
+            username = e.target.value.trim() || 'অতিথি';
+            userAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+            document.getElementById('user-avatar').src = userAvatar;
+            localStorage.setItem('chat_username', username);
+        });
+
+        let replyTarget = null;
+
+        // Custom Player Implementation
+        const iframePlayer = document.getElementById('iframe-player');
+        const videoPlayer = document.getElementById('video-player');
+        const playerLoader = document.getElementById('player-loader');
+        const customControls = document.getElementById('custom-controls');
+        
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const muteBtn = document.getElementById('mute-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const timeDisplay = document.getElementById('time-display');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+        let hlsInstance = null;
+
+        function loadStream(type, url) {
+            playerLoader.classList.remove('hidden');
+            customControls.classList.add('hidden');
+            
+            if (type === 'iframe') {
+                videoPlayer.classList.add('hidden');
+                videoPlayer.pause();
+                iframePlayer.src = url;
+                iframePlayer.classList.remove('hidden');
+                playerLoader.classList.add('hidden');
+            } else {
+                iframePlayer.classList.add('hidden');
+                iframePlayer.src = '';
+                videoPlayer.classList.remove('hidden');
+                customControls.classList.remove('hidden');
+
+                if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('.ts'))) {
+                    if (hlsInstance) hlsInstance.destroy();
+                    hlsInstance = new Hls();
+                    hlsInstance.loadSource(url);
+                    hlsInstance.attachMedia(videoPlayer);
+                    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                        videoPlayer.play();
+                        playerLoader.classList.add('hidden');
+                    });
+                } else {
+                    videoPlayer.src = url;
+                    videoPlayer.addEventListener('loadeddata', () => {
+                        videoPlayer.play();
+                        playerLoader.classList.add('hidden');
+                    });
+                }
+            }
+        }
+
+        // Custom Stream Events
+        playPauseBtn.onclick = () => {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                videoPlayer.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        };
+
+        muteBtn.onclick = () => {
+            videoPlayer.muted = !videoPlayer.muted;
+            muteBtn.innerHTML = videoPlayer.muted ? '<i class="fas fa-volume-mute text-rose-500"></i>' : '<i class="fas fa-volume-up"></i>';
+        };
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            if(videoPlayer.duration) {
+                const percentage = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+                progressBar.style.width = `${percentage}%`;
+                
+                const curMins = Math.floor(videoPlayer.currentTime / 60).toString().padStart(2, '0');
+                const curSecs = Math.floor(videoPlayer.currentTime % 60).toString().padStart(2, '0');
+                const durMins = Math.floor(videoPlayer.duration / 60).toString().padStart(2, '0');
+                const durSecs = Math.floor(videoPlayer.duration % 60).toString().padStart(2, '0');
+                timeDisplay.innerText = `${curMins}:${curSecs} / ${durMins}:${durSecs}`;
+            }
+        });
+
+        progressContainer.onclick = (e) => {
+            const rect = progressContainer.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            videoPlayer.currentTime = pos * videoPlayer.duration;
+        };
+
+        fullscreenBtn.onclick = () => {
+            if (!document.fullscreenElement) {
+                videoPlayer.parentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        };
+
+        // NEW ISOLATED NAMESPACE FOR FIREBASE (sports_v2/...)
+        const serversRef = ref(db, 'sports_v2/servers');
+        const pollRef = ref(db, 'sports_v2/poll');
+        const chatsRef = ref(db, 'sports_v2/chats');
+        const typingRef = ref(db, `sports_v2/typing/${userId}`);
+
+        // Fetch Servers
+        onValue(serversRef, (snapshot) => {
+            const listDiv = document.getElementById('server-list');
+            listDiv.innerHTML = '';
+            const data = snapshot.val();
+            if (data) {
+                let first = true;
+                Object.keys(data).forEach((key) => {
+                    const server = data[key];
+                    const btn = document.createElement('button');
+                    btn.className = "bg-slate-800/80 hover:bg-emerald-500 text-[10px] font-bold px-3 py-1 rounded-full transition-all text-slate-200 hover:text-slate-950 border border-slate-700/60 active:scale-95";
+                    btn.innerText = server.name;
+                    btn.onclick = () => loadStream(server.type, server.url);
+                    listDiv.appendChild(btn);
+
+                    if (first) {
+                        loadStream(server.type, server.url);
+                        first = false;
+                    }
+                });
+            } else {
+                listDiv.innerHTML = `<span class="text-[10px] text-rose-400 font-semibold">কোনো সার্ভার সক্রিয় নেই</span>`;
+                playerLoader.classList.add('hidden');
+            }
+        });
+
+        // Poll listeners
+        onValue(pollRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                document.getElementById('team1-name').innerText = data.team1.name;
+                document.getElementById('team1-flag').src = data.team1.flag;
+                document.getElementById('team2-name').innerText = data.team2.name;
+                document.getElementById('team2-flag').src = data.team2.flag;
+
+                const t1Votes = data.team1.votes || 0;
+                const t2Votes = data.team2.votes || 0;
+                const total = t1Votes + t2Votes;
+
+                let t1Percent = total > 0 ? Math.round((t1Votes / total) * 100) : 50;
+                let t2Percent = total > 0 ? (100 - t1Percent) : 50;
+
+                document.getElementById('team1-bar').style.width = `${t1Percent}%`;
+                document.getElementById('team2-bar').style.width = `${t2Percent}%`;
+                document.getElementById('team1-percent').innerText = `${t1Percent}% (${t1Votes})`;
+                document.getElementById('team2-percent').innerText = `${t2Percent}% (${t2Votes})`;
+            }
+        });
+
+        document.getElementById('vote-team1-btn').onclick = () => vote('team1');
+        document.getElementById('vote-team2-btn').onclick = () => vote('team2');
+
+        function vote(team) {
+            const alreadyVoted = localStorage.getItem('voted_match_v2');
+            if (alreadyVoted) {
+                alert('আপনি ইতিপূর্বে ভোট দিয়েছেন!');
+                return;
+            }
+            const updateRef = ref(db, `sports_v2/poll/${team}/votes`);
+            onValue(updateRef, (snap) => {
+                const current = snap.val() || 0;
+                set(updateRef, current + 1);
+                localStorage.setItem('voted_match_v2', 'true');
+            }, { onlyOnce: true });
+        }
+
+        // Active Connection Track
+        const presenceRef = ref(db, `sports_v2/presence/${userId}`);
+        set(presenceRef, true);
+        onDisconnect(presenceRef).remove();
+        onValue(ref(db, 'sports_v2/presence'), (snap) => {
+            const count = snap.exists() ? Object.keys(snap.val()).length : 1;
+            document.getElementById('online-counter').innerText = `${count} জন একটিভ`;
+        });
+
+        // Chat Listener
+        onValue(chatsRef, (snapshot) => {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach((key) => {
+                    const msg = data[key];
+                    const isMe = msg.userId === userId;
+                    const isAdmin = msg.role === 'admin';
+
+                    const bubbleHtml = `
+                        <div class="animated-message flex items-start gap-2 ${isMe ? 'flex-row-reverse' : ''}">
+                            <img src="${msg.avatar}" class="w-8 h-8 rounded-full bg-slate-800 ${isAdmin ? 'ring-2 ring-yellow-400' : ''}">
+                            <div class="max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                                <div class="flex items-center gap-1.5 mb-0.5">
+                                    <span class="text-[10px] font-bold text-slate-500">${msg.username}</span>
+                                    ${isAdmin ? '<span class="bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-950 font-extrabold text-[8px] px-1.5 rounded">ADMIN</span>' : ''}
+                                </div>
+                                ${msg.replyTo ? `
+                                    <div class="bg-slate-950 text-[10px] p-1.5 px-2.5 rounded-lg border-l-2 border-emerald-500 mb-1 opacity-85">
+                                        <b class="text-emerald-400">${msg.replyTo.sender}:</b> ${msg.replyTo.text}
+                                    </div>
+                                ` : ''}
+                                <div class="p-2.5 rounded-xl text-xs ${isAdmin ? 'bg-gradient-to-r from-yellow-600 to-amber-700 text-white rounded-tl-none' : isMe ? 'bg-emerald-600 text-slate-950 font-semibold rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none'}">
+                                    ${msg.text ? `<p class="break-all leading-normal">${msg.text}</p>` : ''}
+                                    ${msg.imageUrl ? `<img src="${msg.imageUrl}" class="mt-2 rounded-lg max-h-36 object-cover cursor-pointer hover:opacity-90" onclick="window.open('${msg.imageUrl}')">` : ''}
+                                    ${msg.audioUrl ? `<audio controls src="${msg.audioUrl}" class="mt-2 w-44 h-8 rounded bg-slate-950"></audio>` : ''}
+                                </div>
+                                <div class="flex items-center gap-2 mt-1 text-[9px] text-slate-500 font-semibold uppercase">
+                                    <span>${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    <button onclick="setReply('${msg.username}', '${msg.text || '[মিডিয়া फाइल]'}' , '${key}')" class="hover:text-emerald-400 font-bold">Reply</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', bubbleHtml);
+                });
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+
+        // Typing Monitor
+        const textInput = document.getElementById('chat-text-input');
+        let typingTimeout;
+        textInput.addEventListener('input', () => {
+            set(typingRef, { username: username, isTyping: true });
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => set(typingRef, null), 1500);
+        });
+
+        onValue(ref(db, 'sports_v2/typing'), (snapshot) => {
+            const data = snapshot.val();
+            const indicator = document.getElementById('typing-indicator');
+            const userSpan = document.getElementById('typing-user');
+            
+            if (data) {
+                const typers = Object.values(data).filter(t => t.username !== username);
+                if (typers.length > 0) {
+                    userSpan.innerText = typers[0].username;
+                    indicator.classList.remove('hidden');
+                    return;
+                }
+            }
+            indicator.classList.add('hidden');
+        });
+
+        async function uploadImageToImgBB(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+            try {
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const resData = await response.json();
+                return resData.data.url;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        // Voice Message Recording
+        let mediaRecorder;
+        let audioChunks = [];
+        const recordBtn = document.getElementById('voice-record-btn');
+        const voiceIcon = document.getElementById('voice-icon');
+        let isRecording = false;
+
+        recordBtn.onclick = async () => {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                    
+                    mediaRecorder.onstop = async () => {
+                        voiceIcon.className = "fas fa-spinner fa-spin text-emerald-400";
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        const audioName = `voice_${Date.now()}.mp3`;
+                        const fileRef = sRef(storage, `audio_v2/${audioName}`);
+                        try {
+                            const snapshot = await uploadBytes(fileRef, audioBlob);
+                            const downloadUrl = await getDownloadURL(snapshot.ref);
+                            sendChatMessage(null, null, downloadUrl);
+                        } catch (err) {
+                            alert("অডিও আপলোড করা সম্ভব হয়নি।");
+                        }
+                        voiceIcon.className = "fas fa-microphone";
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    voiceIcon.className = "fas fa-stop text-rose-500 animate-pulse";
+                } catch (err) {
+                    alert("মাইক্রোফোনের অনুমতি দিন।");
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+            }
+        };
+
+        // Master Message Dispatch
+        document.getElementById('send-btn').onclick = () => {
+            const text = textInput.value.trim();
+            if (text) {
+                sendChatMessage(text, null, null);
+                textInput.value = '';
+                set(typingRef, null);
+            }
+        };
+
+        textInput.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') document.getElementById('send-btn').click();
+        });
+
+        document.getElementById('chat-image-input').onchange = async (e) => {
+            const file = e.target.files[0];
+            if(file) {
+                const imgUrl = await uploadImageToImgBB(file);
+                if (imgUrl) sendChatMessage(null, imgUrl, null);
+            }
+        };
+
+        function sendChatMessage(text = null, imageUrl = null, audioUrl = null) {
+            const newChatRef = push(chatsRef);
+            const msgObj = {
+                userId: userId,
+                username: username,
+                avatar: userAvatar,
+                timestamp: Date.now(),
+                role: 'user'
+            };
+
+            if(text) msgObj.text = text;
+            if(imageUrl) msgObj.imageUrl = imageUrl;
+            if(audioUrl) msgObj.audioUrl = audioUrl;
+
+            if (replyTarget) {
+                msgObj.replyTo = {
+                    sender: replyTarget.sender,
+                    text: replyTarget.text
+                };
+                cancelReply();
+            }
+            set(newChatRef, msgObj);
+        }
+
+        window.setReply = function(sender, text, key) {
+            replyTarget = { sender, text, key };
+            document.getElementById('reply-target-user').innerText = sender;
+            document.getElementById('reply-target-text').innerText = text;
+            document.getElementById('reply-preview').classList.remove('hidden');
+            textInput.focus();
+        };
+
+        window.cancelReply = function() {
+            replyTarget = null;
+            document.getElementById('reply-preview').classList.add('hidden');
+        };
+    </script>
+</body>
+</html>
