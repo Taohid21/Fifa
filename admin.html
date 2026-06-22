@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Stream Admin (V2)</title>
+    <!-- Google Fonts & Tailwind -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'Hind Siliguri', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen antialiased">
+
+    <header class="bg-slate-900 border-b border-slate-800 py-4 px-6 flex justify-between items-center shadow-lg">
+        <h1 class="text-sm font-bold tracking-widest text-emerald-500 uppercase"><i class="fas fa-sliders-h mr-2"></i>Stream Master Admin Panel</h1>
+        <span class="text-[10px] bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-bold">V2 FRESH INSTANCE</span>
+    </header>
+
+    <div class="max-w-6xl mx-auto p-4 grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+
+        <!-- Server Admin Config -->
+        <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl">
+            <h2 class="text-xs font-bold pb-3 border-b border-slate-800 mb-4 uppercase tracking-widest text-slate-200"><i class="fas fa-server text-emerald-500 mr-2"></i>নতুন সার্ভার যোগ করুন</h2>
+            
+            <div class="space-y-3 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 mb-4">
+                <div>
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">সার্ভারের নাম:</label>
+                    <input id="server-name" type="text" placeholder="যেমন: Server 1 (FHD)" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">সার্ভার সোর্স টাইপ:</label>
+                    <select id="server-type" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-200">
+                        <option value="iframe">Iframe (Embedded code / Link)</option>
+                        <option value="direct">Direct URL (m3u8, mp4, ts)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">স্ট্রিমিং লিঙ্ক (URL):</label>
+                    <input id="server-url" type="text" placeholder="https://domain.com/live.m3u8" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-200">
+                </div>
+                <button id="add-server-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 transition-colors text-slate-950 font-bold text-xs py-2.5 rounded-lg">
+                    সার্ভার যুক্ত করুন
+                </button>
+            </div>
+
+            <div class="mt-4">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-wider">অ্যাক্টিভ সার্ভার তালিকা:</h3>
+                <div id="admin-server-list" class="space-y-2">
+                    <!-- Dynamic server lists -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Poll and Chat Admin Control -->
+        <div class="space-y-6">
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl">
+                <h2 class="text-xs font-bold pb-3 border-b border-slate-800 mb-4 uppercase tracking-widest text-slate-200"><i class="fas fa-edit text-cyan-500 mr-2"></i>ভোট ও দলের তথ্য পরিবর্তন</h2>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                        <h4 class="text-[9px] font-bold text-cyan-400 uppercase mb-2">বাম পাশের দল</h4>
+                        <input id="team1-name-input" type="text" placeholder="Argentina" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs mb-2 text-slate-200">
+                        <input id="team1-flag-input" type="text" placeholder="পতাকার ইমেজ লিঙ্ক" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs text-slate-200">
+                    </div>
+
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                        <h4 class="text-[9px] font-bold text-rose-400 uppercase mb-2">ডান পাশের দল</h4>
+                        <input id="team2-name-input" type="text" placeholder="Austria" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs mb-2 text-slate-200">
+                        <input id="team2-flag-input" type="text" placeholder="পতাকার ইমেজ লিঙ্ক" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs text-slate-200">
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="update-teams-btn" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-xs font-bold py-2.5 rounded-lg text-slate-950 transition-colors">তথ্য আপডেট করুন</button>
+                    <button id="reset-votes-btn" class="flex-1 bg-rose-600 hover:bg-rose-500 text-xs font-bold py-2.5 rounded-lg text-white transition-colors">ভোট রিসেট</button>
+                </div>
+            </div>
+
+            <!-- Chat Console Admin tools -->
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl flex flex-col h-[350px]">
+                <h2 class="text-xs font-bold pb-2 border-b border-slate-800 mb-2 uppercase tracking-widest text-slate-200"><i class="fas fa-comment-slash text-yellow-500 mr-2"></i>চ্যাট মডারেশন ও ঘোষণা</h2>
+                
+                <div id="admin-chat-preview" class="flex-1 bg-slate-950 rounded-xl p-3 overflow-y-auto text-[10px] space-y-2 mb-3 border border-slate-800">
+                    <!-- Chats logs with delete option -->
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-2">
+                        <input id="admin-avatar-input" type="text" value="https://api.dicebear.com/7.x/pixel-art/svg?seed=Admin" class="flex-1 bg-slate-900 border border-slate-800 rounded text-xs p-1 text-slate-200" placeholder="Admin Logo">
+                        <input id="admin-name-input" type="text" value="অ্যাডমিন" class="w-20 bg-slate-900 border border-slate-800 rounded text-xs p-1 text-slate-200" placeholder="Nick">
+                    </div>
+                    <div class="flex gap-2">
+                        <input id="admin-chat-input" type="text" placeholder="অ্যাডমিন হিসেবে একটি ঘোষণা লিখুন..." class="flex-1 bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
+                        <button id="admin-send-btn" class="bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold text-xs px-4 rounded-lg transition-all">পাঠান</button>
+                    </div>
+                    <button id="clear-chats-btn" class="text-center text-[10px] text-rose-400 hover:underline mt-1"><i class="fas fa-trash-alt mr-1"></i>সকল চ্যাট ডিলিট করুন (ডিলিট অল)</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Firebase Script Admin Module Configuration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_HBGuQSh_GzqrHqHbgdaoBikLZsK3Qqs",
+            authDomain: "new-all-f99f7.firebaseapp.com",
+            databaseURL: "https://new-all-f99f7-default-rtdb.firebaseio.com",
+            projectId: "new-all-f99f7",
+            storageBucket: "new-all-f99f7.firebasestorage.app",
+            messagingSenderId: "1069748173900",
+            appId: "1:1069748173900:web:158d6336c0f4628133c8e9",
+            measurementId: "G-V6DZ37WSBF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // CONFIGURING NEW INSTANCE ISOLATED PATHS
+        const serverRef = ref(db, 'sports_v2/servers');
+        const pollRef = ref(db, 'sports_v2/poll');
+        const chatsRef = ref(db, 'sports_v2/chats');
+
+        document.getElementById('add-server-btn').onclick = () => {
+            const name = document.getElementById('server-name').value.trim();
+            const type = document.getElementById('server-type').value;
+            const url = document.getElementById('server-url').value.trim();
+
+            if (name && url) {
+                const newServerRef = push(serverRef);
+                set(newServerRef, { name, type, url });
+                document.getElementById('server-name').value = '';
+                document.getElementById('server-url').value = '';
+            } else {
+                alert('অনুগ্রহ করে সঠিক তথ্য ইনপুট দিন।');
+            }
+        };
+
+        onValue(serverRef, (snapshot) => {
+            const container = document.getElementById('admin-server-list');
+            container.innerHTML = '';
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach((key) => {
+                    const server = data[key];
+                    const item = document.createElement('div');
+                    item.className = "flex justify-between items-center bg-slate-950 p-2 rounded-lg text-xs border border-slate-800";
+                    item.innerHTML = `
+                        <div>
+                            <p class="font-bold text-slate-200">${server.name} <span class="bg-slate-800 text-slate-400 text-[9px] px-1.5 rounded ml-1 uppercase font-semibold">${server.type}</span></p>
+                            <p class="text-slate-500 truncate max-w-xs mt-1">${server.url}</p>
+                        </div>
+                        <button onclick="deleteServer('${key}')" class="text-rose-500 hover:text-rose-400 px-2 text-sm"><i class="fas fa-trash"></i></button>
+                    `;
+                    container.appendChild(item);
+                });
+            } else {
+                container.innerHTML = `<p class="text-[10px] text-slate-600 italic">কোনো সার্ভার যোগ করা নেই।</p>`;
+            }
+        });
+
+        window.deleteServer = function(key) {
+            remove(ref(db, `sports_v2/servers/${key}`));
+        };
+
+        onValue(pollRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                document.getElementById('team1-name-input').value = data.team1.name || '';
+                document.getElementById('team1-flag-input').value = data.team1.flag || '';
+                document.getElementById('team2-name-input').value = data.team2.name || '';
+                document.getElementById('team2-flag-input').value = data.team2.flag || '';
+            }
+        });
+
+        document.getElementById('update-teams-btn').onclick = () => {
+            const t1Name = document.getElementById('team1-name-input').value.trim() || 'আর্জেন্টিনা';
+            const t1Flag = document.getElementById('team1-flag-input').value.trim() || 'https://flagcdn.com/w160/ar.png';
+            const t2Name = document.getElementById('team2-name-input').value.trim() || 'অস্ট্রিয়া';
+            const t2Flag = document.getElementById('team2-flag-input').value.trim() || 'https://flagcdn.com/w160/at.png';
+
+            set(pollRef, {
+                team1: { name: t1Name, flag: t1Flag, votes: 0 },
+                team2: { name: t2Name, flag: t2Flag, votes: 0 }
+            }).then(() => {
+                alert('সফলভাবে দলের তথ্য ও ভোট রিসেট আপডেট করা হয়েছে।');
+            });
+        };
+
+        document.getElementById('reset-votes-btn').onclick = () => {
+            if(confirm("ভোট পুনরায় শূন্য (০) করতে চান?")) {
+                set(ref(db, 'sports_v2/poll/team1/votes'), 0);
+                set(ref(db, 'sports_v2/poll/team2/votes'), 0);
+            }
+        };
+
+        onValue(chatsRef, (snapshot) => {
+            const preview = document.getElementById('admin-chat-preview');
+            preview.innerHTML = '';
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach((key) => {
+                    const msg = data[key];
+                    const itemHtml = `
+                        <div class="border-b border-slate-900 pb-1 flex justify-between items-center gap-2">
+                            <div class="truncate">
+                                <span class="font-bold text-emerald-500">${msg.username}:</span>
+                                <span class="text-slate-300">${msg.text || '[মিডিয়া]'}</span>
+                            </div>
+                            <button onclick="deleteChatMessage('${key}')" class="text-rose-500 hover:text-rose-400"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    `;
+                    preview.insertAdjacentHTML('beforeend', itemHtml);
+                });
+                preview.scrollTop = preview.scrollHeight;
+            }
+        });
+
+        document.getElementById('admin-send-btn').onclick = () => {
+            const text = document.getElementById('admin-chat-input').value.trim();
+            const avatar = document.getElementById('admin-avatar-input').value.trim();
+            const username = document.getElementById('admin-name-input').value.trim();
+
+            if (text) {
+                const newChatRef = push(chatsRef);
+                set(newChatRef, {
+                    userId: 'admin_panel',
+                    username: username || 'অ্যাডমিন',
+                    avatar: avatar || 'https://api.dicebear.com/7.x/pixel-art/svg?seed=Admin',
+                    text: text,
+                    timestamp: Date.now(),
+                    role: 'admin'
+                });
+                document.getElementById('admin-chat-input').value = '';
+            }
+        };
+
+        window.deleteChatMessage = function(key) {
+            remove(ref(db, `sports_v2/chats/${key}`));
+        };
+
+        document.getElementById('clear-chats-btn').onclick = () => {
+            if (confirm("আপনি কি নিশ্চিতভাবে সব বার্তা মুছে ফেলতে চান?")) {
+                remove(chatsRef);
+            }
+        };
+    </script>
+</body>
+</html>
