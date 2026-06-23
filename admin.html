@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Stream Admin (V2)</title>
+    <title>Master Stream Control Room (Safe Admin)</title>
     <!-- Google Fonts & Tailwind -->
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -23,46 +23,74 @@
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen antialiased">
 
     <header class="bg-slate-900 border-b border-slate-800 py-4 px-6 flex justify-between items-center shadow-lg">
-        <h1 class="text-sm font-bold tracking-widest text-emerald-500 uppercase"><i class="fas fa-sliders-h mr-2"></i>Stream Master Admin Panel</h1>
-        <span class="text-[10px] bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-bold">V2 FRESH INSTANCE</span>
+        <h1 class="text-sm font-bold tracking-widest text-emerald-500 uppercase"><i class="fas fa-sliders-h mr-2"></i>Safe Stream Admin Panel</h1>
+        <!-- মোট লাইভ ভিউয়ার কাউন্টার -->
+        <div class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full font-bold flex items-center gap-2">
+            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            ওয়েবসাইটে মোট লাইভ ইউজার: <span id="total-live-counter" class="text-white">0</span> জন
+        </div>
     </header>
 
     <div class="max-w-6xl mx-auto p-4 grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 
-        <!-- Server Admin Config -->
-        <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl">
-            <h2 class="text-xs font-bold pb-3 border-b border-slate-800 mb-4 uppercase tracking-widest text-slate-200"><i class="fas fa-server text-emerald-500 mr-2"></i>নতুন সার্ভার যোগ করুন</h2>
-            
-            <div class="space-y-3 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 mb-4">
-                <div>
-                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">সার্ভারের নাম:</label>
-                    <input id="server-name" type="text" placeholder="যেমন: Server 1 (FHD)" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-200">
+        <!-- Server Admin Config with Edit features -->
+        <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl space-y-6">
+            <div>
+                <h2 id="server-form-title" class="text-xs font-bold pb-3 border-b border-slate-800 mb-4 uppercase tracking-widest text-slate-200"><i class="fas fa-server text-emerald-500 mr-2"></i>সার্ভার পরিচালনা</h2>
+                
+                <div class="space-y-3 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 mb-4">
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">সার্ভারের নাম:</label>
+                        <input id="server-name" type="text" placeholder="Server 1 (FHD)" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-200">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">সার্ভার সোর্স টাইপ:</label>
+                        <select id="server-type" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-200">
+                            <option value="iframe">Iframe (Embedded code / Link)</option>
+                            <option value="direct">Direct URL (m3u8, mp4, ts)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">স্ট্রিমিং লিঙ্ক (URL):</label>
+                        <input id="server-url" type="text" placeholder="https://domain.com/live.m3u8" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-200">
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button id="add-server-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 transition-colors text-slate-950 font-bold text-xs py-2.5 rounded-lg">
+                            সার্ভার সংরক্ষণ
+                        </button>
+                        <button id="cancel-edit-btn" class="bg-slate-800 hover:bg-slate-750 transition-colors text-slate-400 font-bold text-xs py-2.5 px-4 rounded-lg hidden">
+                            বাতিল
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">সার্ভার সোর্স টাইপ:</label>
-                    <select id="server-type" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-200">
-                        <option value="iframe">Iframe (Embedded code / Link)</option>
-                        <option value="direct">Direct URL (m3u8, mp4, ts)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">স্ট্রিমিং লিঙ্ক (URL):</label>
-                    <input id="server-url" type="text" placeholder="https://domain.com/live.m3u8" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-200">
-                </div>
-                <button id="add-server-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 transition-colors text-slate-950 font-bold text-xs py-2.5 rounded-lg">
-                    সার্ভার যুক্ত করুন
-                </button>
-            </div>
 
-            <div class="mt-4">
-                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-wider">অ্যাক্টিভ সার্ভার তালিকা:</h3>
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-wider">চলমান সার্ভার ও লাইভ ইউজার ট্র্যাকিং:</h3>
                 <div id="admin-server-list" class="space-y-2">
                     <!-- Dynamic server lists -->
                 </div>
             </div>
+
+            <!-- Ad Overlay Manager -->
+            <div class="bg-slate-950/50 p-4 rounded-xl border border-slate-800 space-y-4">
+                <h3 class="text-xs font-bold text-yellow-500 uppercase tracking-wider border-b border-slate-800 pb-2"><i class="fas fa-bullhorn mr-2"></i>বিজ্ঞাপন ওভারলে ম্যানেজার</h3>
+                <div class="space-y-2">
+                    <input id="ad-url-input" type="text" placeholder="ছবির বা ভিডিওর সরাসরি (URL) লিঙ্ক" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none">
+                    
+                    <select id="ad-type-input" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs text-slate-200">
+                        <option value="image">Image (বিজ্ঞাপন ছবি)</option>
+                        <option value="video">Video (বিজ্ঞাপন MP4)</option>
+                    </select>
+
+                    <div class="flex gap-2">
+                        <button id="run-ad-btn" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-slate-950 text-xs font-bold py-2 rounded transition-colors">বিজ্ঞাপন চালান</button>
+                        <button id="stop-ad-btn" class="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold py-2 rounded transition-colors">বন্ধ করুন</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Poll and Chat Admin Control -->
+        <!-- Right: Team Config, Chat mod -->
         <div class="space-y-6">
             <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl">
                 <h2 class="text-xs font-bold pb-3 border-b border-slate-800 mb-4 uppercase tracking-widest text-slate-200"><i class="fas fa-edit text-cyan-500 mr-2"></i>ভোট ও দলের তথ্য পরিবর্তন</h2>
@@ -77,7 +105,7 @@
                     <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                         <h4 class="text-[9px] font-bold text-rose-400 uppercase mb-2">ডান পাশের দল</h4>
                         <input id="team2-name-input" type="text" placeholder="Austria" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs mb-2 text-slate-200">
-                        <input id="team2-flag-input" type="text" placeholder="পতাকার ইমেজ লিঙ্ক" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs text-slate-200">
+                        <input id="team2-flag-input" type="text" placeholder="Austria" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs text-slate-200">
                     </div>
                 </div>
 
@@ -111,10 +139,10 @@
 
     </div>
 
-    <!-- Firebase Script Admin Module Configuration -->
+    <!-- Firebase SDK Setup -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD_HBGuQSh_GzqrHqHbgdaoBikLZsK3Qqs",
@@ -130,53 +158,175 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // CONFIGURING NEW INSTANCE ISOLATED PATHS
+        // CONFIGURING INTERACTIVE PATHS
         const serverRef = ref(db, 'sports_v2/servers');
         const pollRef = ref(db, 'sports_v2/poll');
         const chatsRef = ref(db, 'sports_v2/chats');
+        const presenceRef = ref(db, 'sports_v2/presence');
+        const viewersRef = ref(db, 'sports_v2/active_viewers');
+        const adRef = ref(db, 'sports_v2/ad');
 
-        document.getElementById('add-server-btn').onclick = () => {
+        let editServerKey = null; 
+        let rawServersData = {};
+        let liveViewersMap = {}; // সার্ভার ভিউয়ার ম্যাপ
+
+        // ১. রিয়েলটাইমে মোট লাইভ ইউজারের উপস্থিতি কাউন্ট করা
+        onValue(presenceRef, (snapshot) => {
+            const data = snapshot.val();
+            const totalLive = data ? Object.keys(data).length : 0;
+            document.getElementById('total-live-counter').innerText = totalLive;
+        });
+
+        // ২. কোন সার্ভারে কতজন দেখছেন তা ট্র্যাকিং
+        onValue(viewersRef, (snapshot) => {
+            liveViewersMap = {};
+            const data = snapshot.val();
+            if (data) {
+                Object.values(data).forEach((serverId) => {
+                    liveViewersMap[serverId] = (liveViewersMap[serverId] || 0) + 1;
+                });
+            }
+            renderServerList();
+        });
+
+        // ৩. সার্ভার ডেটাবেস হ্যান্ডলার (যুক্ত এবং সংশোধন)
+        const addBtn = document.getElementById('add-server-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const formTitle = document.getElementById('server-form-title');
+
+        addBtn.onclick = () => {
             const name = document.getElementById('server-name').value.trim();
             const type = document.getElementById('server-type').value;
             const url = document.getElementById('server-url').value.trim();
 
-            if (name && url) {
+            if (!name || !url) {
+                alert('অনুগ্রহ করে সঠিক তথ্য ইনপুট দিন।');
+                return;
+            }
+
+            if (editServerKey) {
+                const specificServerRef = ref(db, `sports_v2/servers/${editServerKey}`);
+                update(specificServerRef, { name, type, url }).then(() => {
+                    resetServerForm();
+                });
+            } else {
                 const newServerRef = push(serverRef);
                 set(newServerRef, { name, type, url });
-                document.getElementById('server-name').value = '';
-                document.getElementById('server-url').value = '';
-            } else {
-                alert('অনুগ্রহ করে সঠিক তথ্য ইনপুট দিন।');
+                resetServerForm();
             }
         };
 
+        cancelEditBtn.onclick = () => {
+            resetServerForm();
+        };
+
+        function resetServerForm() {
+            editServerKey = null;
+            document.getElementById('server-name').value = '';
+            document.getElementById('server-url').value = '';
+            addBtn.innerText = "সার্ভার যুক্ত করুন";
+            addBtn.className = "flex-1 bg-emerald-600 hover:bg-emerald-500 transition-colors text-slate-950 font-bold text-xs py-2.5 rounded-lg";
+            formTitle.innerHTML = `<i class="fas fa-server text-emerald-500 mr-2"></i>সার্ভার পরিচালনা`;
+            cancelEditBtn.classList.add('hidden');
+        }
+
+        // ৪. সার্ভার লিস্ট শো এবং এডিট অপশন রেন্ডারিং
         onValue(serverRef, (snapshot) => {
+            rawServersData = snapshot.val() || {};
+            renderServerList();
+        });
+
+        function renderServerList() {
             const container = document.getElementById('admin-server-list');
             container.innerHTML = '';
-            const data = snapshot.val();
-            if (data) {
-                Object.keys(data).forEach((key) => {
-                    const server = data[key];
+            
+            const keys = Object.keys(rawServersData);
+            if (keys.length > 0) {
+                keys.forEach((key) => {
+                    const server = rawServersData[key];
+                    const viewersCount = liveViewersMap[key] || 0; // সার্ভার অনুযায়ী লাইভ ইউজার গণনা
+                    
                     const item = document.createElement('div');
-                    item.className = "flex justify-between items-center bg-slate-950 p-2 rounded-lg text-xs border border-slate-800";
+                    item.className = "flex justify-between items-center bg-slate-950 p-2.5 rounded-lg text-xs border border-slate-800 animate-fade-in";
                     item.innerHTML = `
-                        <div>
-                            <p class="font-bold text-slate-200">${server.name} <span class="bg-slate-800 text-slate-400 text-[9px] px-1.5 rounded ml-1 uppercase font-semibold">${server.type}</span></p>
-                            <p class="text-slate-500 truncate max-w-xs mt-1">${server.url}</p>
+                        <div class="truncate max-w-[65%]">
+                            <p class="font-bold text-slate-200 flex items-center gap-1.5">
+                                ${server.name} 
+                                <span class="bg-slate-800 text-slate-400 text-[8px] px-1.5 py-0.5 rounded uppercase font-semibold">${server.type}</span>
+                            </p>
+                            <p class="text-slate-500 truncate mt-1 text-[10px]">${server.url}</p>
+                            <!-- লাইভ ভিউয়ার কাউন্টার ডিসপ্লে -->
+                            <p class="text-emerald-400 font-bold text-[10px] mt-1 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                                ভিউয়ার সংখ্যা: ${viewersCount} জন
+                            </p>
                         </div>
-                        <button onclick="deleteServer('${key}')" class="text-rose-500 hover:text-rose-400 px-2 text-sm"><i class="fas fa-trash"></i></button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="triggerEditServer('${key}')" class="bg-cyan-600/10 hover:bg-cyan-600 text-cyan-400 hover:text-slate-950 p-1.5 px-2.5 rounded transition duration-200">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteServer('${key}')" class="bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white p-1.5 px-2.5 rounded transition duration-200">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
                     `;
                     container.appendChild(item);
                 });
             } else {
                 container.innerHTML = `<p class="text-[10px] text-slate-600 italic">কোনো সার্ভার যোগ করা নেই।</p>`;
             }
-        });
+        }
 
-        window.deleteServer = function(key) {
-            remove(ref(db, `sports_v2/servers/${key}`));
+        // AD ওভারলে ইভেন্ট হ্যান্ডলার
+        document.getElementById('run-ad-btn').onclick = () => {
+            const adUrl = document.getElementById('ad-url-input').value.trim();
+            const adType = document.getElementById('ad-type-input').value;
+
+            if (adUrl) {
+                set(adRef, {
+                    active: true,
+                    type: adType,
+                    url: adUrl,
+                    timestamp: Date.now()
+                }).then(() => {
+                    alert('বিজ্ঞাপনটি সফলভাবে চালু করা হয়েছে।');
+                });
+            } else {
+                alert('বিজ্ঞাপন লিঙ্ক দিন।');
+            }
         };
 
+        document.getElementById('stop-ad-btn').onclick = () => {
+            set(adRef, { active: false, type: 'image', url: '', timestamp: Date.now() }).then(() => {
+                alert('বিজ্ঞাপনটি বন্ধ করা হয়েছে।');
+            });
+        };
+
+        // এডিট ট্র্যাকার বাইন্ডিং
+        window.triggerEditServer = function(key) {
+            const server = rawServersData[key];
+            if (server) {
+                editServerKey = key;
+                document.getElementById('server-name').value = server.name;
+                document.getElementById('server-type').value = server.type;
+                document.getElementById('server-url').value = server.url;
+                
+                addBtn.innerText = "সার্ভার আপডেট করুন";
+                addBtn.className = "flex-1 bg-cyan-500 hover:bg-cyan-400 transition-colors text-slate-950 font-bold text-xs py-2.5 rounded-lg";
+                formTitle.innerHTML = `<i class="fas fa-edit text-cyan-500 mr-2"></i>সার্ভার সংশোধন মোড`;
+                cancelEditBtn.classList.remove('hidden');
+                
+                document.getElementById('server-name').focus();
+            }
+        };
+
+        window.deleteServer = function(key) {
+            if(confirm("সার্ভারটি ডিলিট করতে চান?")) {
+                remove(ref(db, `sports_v2/servers/${key}`));
+            }
+        };
+
+        // Poll handler
         onValue(pollRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -188,9 +338,9 @@
         });
 
         document.getElementById('update-teams-btn').onclick = () => {
-            const t1Name = document.getElementById('team1-name-input').value.trim() || 'আর্জেন্টিনা';
+            const t1Name = document.getElementById('team1-name-input').value.trim() || 'Argentina';
             const t1Flag = document.getElementById('team1-flag-input').value.trim() || 'https://flagcdn.com/w160/ar.png';
-            const t2Name = document.getElementById('team2-name-input').value.trim() || 'অস্ট্রিয়া';
+            const t2Name = document.getElementById('team2-name-input').value.trim() || 'Austria';
             const t2Flag = document.getElementById('team2-flag-input').value.trim() || 'https://flagcdn.com/w160/at.png';
 
             set(pollRef, {
@@ -208,6 +358,7 @@
             }
         };
 
+        // Chat tracking
         onValue(chatsRef, (snapshot) => {
             const preview = document.getElementById('admin-chat-preview');
             preview.innerHTML = '';
