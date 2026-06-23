@@ -98,7 +98,8 @@
         <div id="ad-overlay" class="absolute inset-0 bg-slate-950 z-40 hidden flex flex-col items-center justify-center">
             <span class="absolute top-4 right-4 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wider uppercase z-50">বিজ্ঞাপন চলছে</span>
             <img id="ad-image" class="w-full h-full object-contain hidden" src="" alt="Ad Image">
-            <video id="ad-video" class="w-full h-full object-contain hidden" playsinline muted loop></video>
+            <!-- বিজ্ঞাপন সাউন্ড সচল করার জন্য প্লেয়ার থেকে muted এট্রিবিউট রিমুভ করা হয়েছে -->
+            <video id="ad-video" class="w-full h-full object-contain hidden" playsinline loop></video>
         </div>
 
         <!-- Floating Reactions Over player -->
@@ -699,7 +700,7 @@
         const reactionRef = ref(db, 'sports_v2/reactions');
         const adRef = ref(db, 'sports_v2/ad');
 
-        // Ad overlays safely checked
+        // Ad overlays safely checked and unmuted!
         onValue(adRef, (snapshot) => {
             const ad = snapshot.val();
             if (ad && ad.active) {
@@ -712,7 +713,13 @@
                     if (adImage) { adImage.src = ad.url; adImage.classList.remove('hidden'); }
                 } else if (ad.type === 'video') {
                     if (adImage) adImage.classList.add('hidden');
-                    if (adVideo) { adVideo.src = ad.url; adVideo.classList.remove('hidden'); adVideo.play(); }
+                    if (adVideo) { 
+                        adVideo.src = ad.url; 
+                        adVideo.classList.remove('hidden'); 
+                        adVideo.muted = false; // বিজ্ঞাপন সাউন্ড আনম্যুট করা হলো
+                        adVideo.volume = 1.0;  // বিজ্ঞাপন সাউন্ড ফুল করা হলো
+                        adVideo.play(); 
+                    }
                 }
             } else {
                 isAdActive = false;
@@ -921,23 +928,6 @@
             }
             if (indicator) indicator.classList.add('hidden');
         });
-
-        // Live Reactions
-        onValue(reactionRef, (snap) => {
-            const val = snap.val();
-            if (val) createFloatingEmoji(val.emoji);
-        });
-
-        function createFloatingEmoji(emojiStr) {
-            const container = document.getElementById('reactions-overlay');
-            if (!container) return;
-            const el = document.createElement('div');
-            el.className = "floating-emoji";
-            el.innerText = emojiStr;
-            el.style.left = `${Math.floor(Math.random() * 80) + 10}%`;
-            container.appendChild(el);
-            setTimeout(() => el.remove(), 2500);
-        }
 
         async function uploadImageToImgBB(file) {
             const formData = new FormData();
