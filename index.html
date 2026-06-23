@@ -58,15 +58,15 @@
         /* Floating Reaction Elements CSS */
         @keyframes floatUp {
             0% { transform: translateY(0) scale(0.8); opacity: 1; }
-            100% { transform: translateY(-200px) scale(1.4) rotate(15deg); opacity: 0; }
+            100% { transform: translateY(-180px) scale(1.5) rotate(15deg); opacity: 0; }
         }
         .floating-emoji {
             position: absolute;
-            bottom: 40px;
+            bottom: 20px;
             pointer-events: none;
-            z-index: 50;
-            animation: floatUp 2s ease-out forwards;
-            font-size: 24px;
+            z-index: 45;
+            animation: floatUp 2.2s ease-out forwards;
+            font-size: 28px;
         }
 
         /* Voice note equalizer bar animations */
@@ -90,7 +90,7 @@
         }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen flex flex-col antialiased relative">
+<body class="text-slate-100 min-h-screen flex flex-col antialiased relative overflow-x-hidden">
 
     <!-- Sticky Video Player (Top) -->
     <div class="sticky top-0 z-50 w-full bg-black aspect-video max-h-[45vh] lg:max-h-[50vh] relative group flex items-center justify-center overflow-hidden border-b border-slate-900 shadow-2xl shadow-black/80">
@@ -98,7 +98,6 @@
         <div id="ad-overlay" class="absolute inset-0 bg-slate-950 z-40 hidden flex flex-col items-center justify-center">
             <span class="absolute top-4 right-4 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wider uppercase z-50">বিজ্ঞাপন চলছে</span>
             <img id="ad-image" class="w-full h-full object-contain hidden" src="" alt="Ad Image">
-            <!-- বিজ্ঞাপন সাউন্ড সচল করার জন্য প্লেয়ার থেকে muted এট্রিবিউট রিমুভ করা হয়েছে -->
             <video id="ad-video" class="w-full h-full object-contain hidden" playsinline loop></video>
         </div>
 
@@ -133,13 +132,24 @@
         </div>
     </div>
 
-    <!-- Active Server Selectors -->
-    <div class="bg-slate-900/40 py-2.5 px-4 flex flex-wrap gap-2.5 items-center justify-center border-b border-slate-900/80 backdrop-blur-md">
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-            <i class="fas fa-server text-emerald-500"></i> সার্ভার সুইচ:
-        </span>
-        <div id="server-list" class="flex gap-1.5 flex-wrap">
-            <!-- Dynamic Server Buttons -->
+    <!-- Active Server Selectors & Proxy Bypass Switch -->
+    <div class="bg-slate-900/40 py-2.5 px-4 flex flex-wrap gap-3 items-center justify-center border-b border-slate-900/80 backdrop-blur-md">
+        <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                <i class="fas fa-server text-emerald-500"></i> সার্ভার switch:
+            </span>
+            <div id="server-list" class="flex gap-1.5 flex-wrap">
+                <!-- Dynamic Server Buttons -->
+            </div>
+        </div>
+        
+        <!-- CORS Proxy Switcher for Restricted High-Level Links -->
+        <div class="flex items-center gap-2 bg-slate-950/60 px-3 py-1 rounded-full border border-slate-800">
+            <label class="relative inline-flex items-center cursor-pointer select-none">
+                <input type="checkbox" id="use-proxy-toggle" class="sr-only peer">
+                <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500 peer-checked:after:bg-slate-950"></div>
+                <span class="ml-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider peer-checked:text-emerald-400">CORS Proxy</span>
+            </label>
         </div>
     </div>
 
@@ -203,12 +213,12 @@
                 </div>
 
                 <!-- Floating Emoji Panel -->
-                <div class="bg-slate-950/80 border-t border-slate-900 py-1.5 px-3 flex justify-around items-center gap-1 shrink-0">
-                    <button data-emoji="⚽" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">⚽</button>
-                    <button data-emoji="🔥" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">🔥</button>
-                    <button data-emoji="❤️" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">❤️</button>
-                    <button data-emoji="👏" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">👏</button>
-                    <button data-emoji="😮" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">😮</button>
+                <div class="bg-slate-950/80 border-t border-slate-900 py-1.5 px-3 flex justify-around items-center gap-1 shrink-0 bg-slate-900/80">
+                    <button data-emoji="⚽" class="emoji-btn hover:scale-125 transition-transform text-xl p-1">⚽</button>
+                    <button data-emoji="🔥" class="emoji-btn hover:scale-125 transition-transform text-xl p-1">🔥</button>
+                    <button data-emoji="❤️" class="emoji-btn hover:scale-125 transition-transform text-xl p-1">❤️</button>
+                    <button data-emoji="👏" class="emoji-btn hover:scale-125 transition-transform text-xl p-1">👏</button>
+                    <button data-emoji="😮" class="emoji-btn hover:scale-125 transition-transform text-xl p-1">😮</button>
                 </div>
 
                 <!-- Quick Slang presets -->
@@ -357,7 +367,7 @@
 
         const IMGBB_API_KEY = "4f29b88d8207f6e762c2c852d5c895f8";
 
-        // ----------------- ১. সকল ডম ডিক্লারেশন শুরুতে (VARIABLE HOISTING FIX) -----------------
+        // ----------------- গ্লোবাল ও মডিউল স্কোপ ভেরিয়েবল ডিফাইন -----------------
         const textInput = document.getElementById('chat-text-input');
         const iframePlayer = document.getElementById('iframe-player');
         const videoPlayer = document.getElementById('video-player');
@@ -379,6 +389,15 @@
         const recordBtn = document.getElementById('voice-record-btn');
         const cancelVoiceBtn = document.getElementById('cancel-voice-btn');
         const finishVoiceBtn = document.getElementById('finish-voice-btn');
+        const useProxyToggle = document.getElementById('use-proxy-toggle');
+
+        let typingTimeout = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let replyTarget = null;
+        let activeStreamUrl = '';
+        let activeStreamType = '';
+        let activeServerId = '';
 
         // Identity settings
         let userId = localStorage.getItem('chat_user_id') || 'usr_' + Math.random().toString(36).substring(2, 9);
@@ -396,11 +415,7 @@
         if (document.getElementById('share-wa')) document.getElementById('share-wa').href = `https://api.whatsapp.com/send?text=${encodeURIComponent('লাইভ খেলা দেখুন এখানে: ' + shareURL)}`;
         if (document.getElementById('share-fb')) document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
 
-        let replyTarget = null; // Scoped safely inside the module
-
-        // ----------------- ২. ইভেন্ট লিসেনার বাইন্ডিংস (STANDARD ADD_EVENT_LISTENER) -----------------
-        
-        // Tab Switchers safely checked
+        // Tab Switchers
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tabName = btn.getAttribute('data-tab');
@@ -441,13 +456,41 @@
             });
         }
 
-        // Floating reaction click
+        // Floating reaction click to Firebase
         document.querySelectorAll('.emoji-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const emoji = btn.getAttribute('data-emoji');
-                set(reactionRef, { emoji: emoji, timestamp: Date.now() });
+                const reactionRef = ref(db, 'sports_v2/reactions');
+                set(reactionRef, { emoji: emoji, timestamp: Date.now(), trigger: Math.random() });
             });
         });
+
+        // Listen for Realtime floating reactions on Video Screen
+        const reactionRefListen = ref(db, 'sports_v2/reactions');
+        onValue(reactionRefListen, (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.emoji) {
+                // If the reaction is sent recently (within 4 seconds), render it floating
+                if (Date.now() - data.timestamp < 4000) {
+                    createFloatingEmoji(data.emoji);
+                }
+            }
+        });
+
+        function createFloatingEmoji(emoji) {
+            const overlay = document.getElementById('reactions-overlay');
+            if (!overlay) return;
+            const span = document.createElement('span');
+            span.className = 'floating-emoji';
+            span.innerText = emoji;
+            // Place at random horizontal percentage positions
+            span.style.left = `${Math.floor(Math.random() * 75) + 10}%`;
+            overlay.appendChild(span);
+            // Auto remove after animation completes
+            setTimeout(() => {
+                span.remove();
+            }, 2200);
+        }
 
         // Stickers click
         document.querySelectorAll('.sticker-btn').forEach(btn => {
@@ -575,11 +618,24 @@
             if (preview) preview.classList.add('hidden');
         }
 
+        // --- Stream Proxy Helper (To play Restricted IPTV links) ---
+        function getPlayableUrl(url) {
+            if (useProxyToggle && useProxyToggle.checked) {
+                // Free CORS bypass gateway to load protected streams
+                return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            }
+            return url;
+        }
+
         // --- Stream Logic ---
         let hlsInstance = null;
         let isAdActive = false;
 
         function loadStream(type, url, serverId) {
+            activeStreamUrl = url;
+            activeStreamType = type;
+            activeServerId = serverId;
+
             if (playerLoader) playerLoader.classList.remove('hidden');
             if (customControls) customControls.classList.add('hidden');
             
@@ -587,13 +643,15 @@
             set(viewerRef, serverId);
             onDisconnect(viewerRef).remove();
 
+            const finalUrl = getPlayableUrl(url);
+
             if (type === 'iframe') {
                 if (videoPlayer) {
                     videoPlayer.classList.add('hidden');
                     videoPlayer.pause();
                 }
                 if (iframePlayer) {
-                    iframePlayer.src = url;
+                    iframePlayer.src = url; // Iframes cannot be routed through CORS proxy directly
                     iframePlayer.classList.remove('hidden');
                 }
                 if (playerLoader) playerLoader.classList.add('hidden');
@@ -607,24 +665,46 @@
                     if (customControls) customControls.classList.remove('hidden');
                 }
 
-                if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('.ts'))) {
+                if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('.ts') || type === 'hls')) {
                     if (hlsInstance) hlsInstance.destroy();
-                    hlsInstance = new Hls();
-                    hlsInstance.loadSource(url);
+                    hlsInstance = new Hls({
+                        xhrSetup: function (xhr) {
+                            xhr.withCredentials = false;
+                        }
+                    });
+                    hlsInstance.loadSource(finalUrl);
                     if (videoPlayer) {
                         hlsInstance.attachMedia(videoPlayer);
                         hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
                             videoPlayer.muted = isAdActive;
-                            videoPlayer.play();
+                            videoPlayer.play().catch(() => {});
                             if (playerLoader) playerLoader.classList.add('hidden');
+                        });
+                        hlsInstance.on(Hls.Events.ERROR, function (event, data) {
+                            if (data.fatal) {
+                                switch (data.type) {
+                                    case Hls.ErrorTypes.NETWORK_ERROR:
+                                        hlsInstance.startLoad();
+                                        break;
+                                    case Hls.ErrorTypes.MEDIA_ERROR:
+                                        hlsInstance.recoverMediaError();
+                                        break;
+                                    default:
+                                        if (playerLoader) playerLoader.classList.add('hidden');
+                                        break;
+                                }
+                            }
                         });
                     }
                 } else {
                     if (videoPlayer) {
-                        videoPlayer.src = url;
+                        videoPlayer.src = finalUrl;
                         videoPlayer.addEventListener('loadeddata', () => {
                             videoPlayer.muted = isAdActive;
-                            videoPlayer.play();
+                            videoPlayer.play().catch(() => {});
+                            if (playerLoader) playerLoader.classList.add('hidden');
+                        });
+                        videoPlayer.addEventListener('error', () => {
                             if (playerLoader) playerLoader.classList.add('hidden');
                         });
                     }
@@ -632,11 +712,20 @@
             }
         }
 
+        // Toggle proxy reloads active stream
+        if (useProxyToggle) {
+            useProxyToggle.addEventListener('change', () => {
+                if (activeStreamUrl) {
+                    loadStream(activeStreamType, activeStreamUrl, activeServerId);
+                }
+            });
+        }
+
         if (playPauseBtn) {
             playPauseBtn.addEventListener('click', () => {
                 if (videoPlayer) {
                     if (videoPlayer.paused) {
-                        videoPlayer.play();
+                        videoPlayer.play().catch(() => {});
                         playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                     } else {
                         videoPlayer.pause();
@@ -684,9 +773,9 @@
             fullscreenBtn.addEventListener('click', () => {
                 if (videoPlayer) {
                     if (!document.fullscreenElement) {
-                        videoPlayer.parentElement.requestFullscreen();
+                        videoPlayer.parentElement.requestFullscreen().catch(() => {});
                     } else {
-                        document.exitFullscreen();
+                        document.exitFullscreen().catch(() => {});
                     }
                 }
             });
@@ -697,7 +786,6 @@
         const pollRef = ref(db, 'sports_v2/poll');
         const chatsRef = ref(db, 'sports_v2/chats');
         const typingRef = ref(db, `sports_v2/typing/${userId}`);
-        const reactionRef = ref(db, 'sports_v2/reactions');
         const adRef = ref(db, 'sports_v2/ad');
 
         // Ad overlays safely checked and unmuted!
@@ -718,7 +806,7 @@
                         adVideo.classList.remove('hidden'); 
                         adVideo.muted = false; // বিজ্ঞাপন সাউন্ড আনম্যুট করা হলো
                         adVideo.volume = 1.0;  // বিজ্ঞাপন সাউন্ড ফুল করা হলো
-                        adVideo.play(); 
+                        adVideo.play().catch(() => {}); 
                     }
                 }
             } else {
@@ -831,7 +919,7 @@
             }, { onlyOnce: true });
         }
 
-        // Connection presence tracker (নিখুঁত লাইভ কাউন্ট শো করবে)
+        // Connection presence tracker
         const presenceRef = ref(db, `sports_v2/presence/${userId}`);
         set(presenceRef, true);
         onDisconnect(presenceRef).remove();
@@ -904,12 +992,28 @@
             }
         });
 
-        // Typing monitor
+        // Optimized Typing monitor (Saves battery and cleans Firebase instantly)
         if (textInput) {
             textInput.addEventListener('input', () => {
-                set(typingRef, { username: username, isTyping: true });
+                const currentText = textInput.value.trim();
+                
+                if (currentText.length > 0) {
+                    set(typingRef, { username: username, isTyping: true });
+                    clearTimeout(typingTimeout);
+                    typingTimeout = setTimeout(() => {
+                        set(typingRef, null);
+                    }, 2500);
+                } else {
+                    // Instantly clean typing indicator if user clears input text
+                    clearTimeout(typingTimeout);
+                    set(typingRef, null);
+                }
+            });
+
+            // If user unfocuses or leaves input, remove typing
+            textInput.addEventListener('blur', () => {
                 clearTimeout(typingTimeout);
-                typingTimeout = setTimeout(() => set(typingRef, null), 1500);
+                set(typingRef, null);
             });
         }
 
