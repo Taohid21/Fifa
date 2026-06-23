@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>fifa live</title>
+    <title>Live Stream & Fan Hub</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
@@ -44,7 +44,7 @@
             animation: popUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Pulse Ring for Live Indicator */
+        /* Live pulse */
         .live-glow {
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
             animation: livePulse 1.8s infinite;
@@ -54,172 +54,291 @@
             70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
+
+        /* Floating Reaction Elements CSS */
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-200px) scale(1.4) rotate(15deg); opacity: 0; }
+        }
+        .floating-emoji {
+            position: absolute;
+            bottom: 40px;
+            pointer-events: none;
+            z-index: 50;
+            animation: floatUp 2s ease-out forwards;
+            font-size: 24px;
+        }
+
+        /* Voice note equalizer bar animations */
+        @keyframes wave {
+            0%, 100% { height: 4px; }
+            50% { height: 20px; }
+        }
+        .eq-bar {
+            width: 3px;
+            background-color: #f43f5e;
+            animation: wave 1s ease-in-out infinite;
+        }
+        .eq-bar:nth-child(2) { animation-delay: 0.15s; }
+        .eq-bar:nth-child(3) { animation-delay: 0.3s; }
+        .eq-bar:nth-child(4) { animation-delay: 0.45s; }
+
+        .admin-glow-card {
+            border: 1px solid #eab308;
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.15);
+            background: linear-gradient(135deg, #1e1b4b, #111827);
+        }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen flex flex-col antialiased">
+<body class="text-slate-100 min-h-screen flex flex-col antialiased relative">
 
-    <!-- Premium Custom Video Player -->
-    <div class="w-full bg-black aspect-video max-h-[50vh] relative group flex items-center justify-center overflow-hidden border-b border-slate-900 shadow-2xl">
-        <!-- Loader -->
-        <div id="player-loader" class="absolute z-10 flex flex-col items-center gap-2 bg-slate-950/80 p-5 rounded-2xl border border-slate-800/60 backdrop-blur-md">
-            <i class="fas fa-spinner fa-spin text-3xl text-emerald-500"></i>
-            <span class="text-xs text-emerald-400 font-semibold">স্ট্রীম সংযোগ হচ্ছে...</span>
+    <!-- Sticky Video Player (Top) -->
+    <div class="sticky top-0 z-50 w-full bg-black aspect-video max-h-[45vh] lg:max-h-[50vh] relative group flex items-center justify-center overflow-hidden border-b border-slate-900 shadow-2xl shadow-black/80">
+        <!-- Advertisement Overlay Player -->
+        <div id="ad-overlay" class="absolute inset-0 bg-slate-950 z-40 hidden flex flex-col items-center justify-center">
+            <span class="absolute top-4 right-4 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wider uppercase z-50">বিজ্ঞাপন চলছে</span>
+            <img id="ad-image" class="w-full h-full object-contain hidden" src="" alt="Ad Image">
+            <video id="ad-video" class="w-full h-full object-contain hidden" playsinline muted loop></video>
         </div>
 
-        <!-- iframe Source -->
-        <iframe id="iframe-player" class="w-full h-full hidden" allowfullscreen frameborder="0" allow="autoplay; encrypted-media"></iframe>
+        <!-- Floating Reactions Over player -->
+        <div id="reactions-overlay" class="absolute inset-0 pointer-events-none z-30 overflow-hidden"></div>
 
-        <!-- Native HTML5 Video -->
+        <!-- Loader -->
+        <div id="player-loader" class="absolute z-10 flex flex-col items-center gap-2 bg-slate-950/85 p-4 rounded-xl border border-slate-800/50">
+            <i class="fas fa-spinner fa-spin text-2xl text-emerald-500"></i>
+            <span class="text-[10px] text-emerald-400 font-semibold">সংযোগ হচ্ছে...</span>
+        </div>
+
+        <iframe id="iframe-player" class="w-full h-full hidden" allowfullscreen frameborder="0" allow="autoplay; encrypted-media"></iframe>
         <video id="video-player" class="w-full h-full hidden object-contain" playsinline></video>
 
-        <!-- Dynamic Control Overlay for direct streams -->
-        <div id="custom-controls" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col gap-2 z-10 hidden">
+        <!-- Custom Controls -->
+        <div id="custom-controls" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col gap-2 z-10 hidden">
             <div class="w-full bg-slate-800/80 h-1 rounded-full cursor-pointer relative" id="progress-container">
-                <div id="progress-bar" class="bg-emerald-500 h-full w-0 transition-all duration-100"></div>
+                <div id="progress-bar" class="bg-emerald-500 h-full w-0"></div>
             </div>
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <button id="play-pause-btn" class="hover:text-emerald-400 transition text-sm"><i class="fas fa-play"></i></button>
-                    <button id="mute-btn" class="hover:text-emerald-400 transition text-sm"><i class="fas fa-volume-up"></i></button>
-                    <div class="text-[10px] text-slate-300 font-mono" id="time-display">00:00 / 00:00</div>
+                    <button id="play-pause-btn" class="hover:text-emerald-400 text-xs"><i class="fas fa-play"></i></button>
+                    <button id="mute-btn" class="hover:text-emerald-400 text-xs"><i class="fas fa-volume-up"></i></button>
+                    <div class="text-[9px] text-slate-300 font-mono" id="time-display">00:00 / 00:00</div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="text-[9px] bg-emerald-500 text-slate-950 px-2.5 py-0.5 rounded-full font-extrabold tracking-wider live-glow flex items-center gap-1"><span class="w-1 h-1 bg-slate-950 rounded-full animate-ping"></span> LIVE</span>
-                    <button id="fullscreen-btn" class="hover:text-emerald-400 transition text-sm"><i class="fas fa-expand"></i></button>
+                    <span class="text-[8px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full font-extrabold tracking-wider live-glow flex items-center gap-1"><span class="w-1 h-1 bg-slate-950 rounded-full animate-ping"></span> LIVE</span>
+                    <button id="fullscreen-btn" class="hover:text-emerald-400 text-xs"><i class="fas fa-expand"></i></button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Active Server Selection (যা অ্যাডমিন প্যানেল থেকে ইনপুট হবে) -->
-    <div class="bg-slate-900/40 py-2.5 px-4 flex flex-wrap gap-3 items-center justify-center border-b border-slate-900/80 backdrop-blur-md">
+    <!-- Active Server Selectors -->
+    <div class="bg-slate-900/40 py-2.5 px-4 flex flex-wrap gap-2.5 items-center justify-center border-b border-slate-900/80 backdrop-blur-md">
         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-            <i class="fas fa-server text-emerald-500"></i> সার্ভার সুইচ করুন:
+            <i class="fas fa-server text-emerald-500"></i> সার্ভার সুইচ:
         </span>
-        <div id="server-list" class="flex gap-2 flex-wrap">
+        <div id="server-list" class="flex gap-1.5 flex-wrap">
             <!-- Dynamic Server Buttons -->
         </div>
     </div>
 
-    <!-- Interface Workspace Grid -->
-    <div class="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto p-4 gap-6">
+    <!-- MAIN INTERACTIVE HUB (Fixed sizing container) -->
+    <div class="max-w-2xl w-full mx-auto p-4 flex flex-col gap-4">
         
-        <!-- Left: Match Pole and Avatar Customizer -->
-        <div class="flex-1 flex flex-col gap-4">
-            <div class="bg-slate-900/50 p-5 rounded-2xl shadow-xl border border-slate-800/80 backdrop-blur-md">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
-                    
-                    <!-- Avatar config -->
-                    <div class="flex items-center gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 w-full sm:w-auto">
-                        <div class="relative flex-shrink-0">
-                            <img id="user-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Guest" class="w-11 h-11 rounded-full border-2 border-emerald-500/50 bg-slate-800" alt="Avatar">
-                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-950"></span>
-                        </div>
-                        <div>
-                            <input id="username-input" type="text" value="ইউজার" class="bg-transparent border-b border-slate-800 focus:border-emerald-500 text-xs font-bold text-slate-200 focus:outline-none py-0.5 w-24">
-                            <p class="text-[9px] text-slate-500 mt-1">নাম এডিট করতে এখানে লিখুন</p>
-                        </div>
+        <!-- Control Hub Bar (Profile + Navigation Tabs) -->
+        <div class="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            <!-- Left Side: User Profile -->
+            <div class="flex items-center gap-3 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/60 w-full sm:w-auto">
+                <div class="relative flex-shrink-0 cursor-pointer group" id="avatar-container" title="ছবি পরিবর্তন করুন">
+                    <img id="user-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Guest" class="w-10 h-10 rounded-full border border-emerald-500 bg-slate-800 object-cover" alt="Avatar">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-camera text-white text-[10px]"></i>
                     </div>
-
-                    <!-- Beautiful Glossy Circular Flags Vote Poll -->
-                    <div class="flex-1 w-full bg-slate-950/40 p-4 rounded-xl border border-slate-800/80">
-                        <div class="text-center text-[10px] font-bold text-slate-400 mb-3 tracking-widest uppercase">কাকে সাপোর্ট করছেন? ক্লিক করে ভোট দিন</div>
-                        <div class="flex items-center justify-between gap-4">
-                            <!-- Team 1 Option -->
-                            <button id="vote-team1-btn" class="group flex flex-col items-center gap-1 flex-1 focus:outline-none">
-                                <div class="relative w-12 h-12 rounded-full overflow-hidden border-2 border-cyan-500/80 shadow-lg group-hover:scale-110 active:scale-95 transition-all duration-300">
-                                    <img id="team1-flag" src="https://flagcdn.com/w160/ar.png" class="w-full h-full object-cover" alt="T1">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-                                </div>
-                                <span id="team1-name" class="text-[11px] font-bold text-slate-300 mt-1">আর্জেন্টিনা</span>
-                            </button>
-
-                            <!-- Live Progress track -->
-                            <div class="flex-1 flex flex-col items-center">
-                                <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex border border-slate-800">
-                                    <div id="team1-bar" class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full transition-all duration-700 ease-out" style="width: 50%"></div>
-                                    <div id="team2-bar" class="bg-gradient-to-l from-red-500 to-amber-500 h-full transition-all duration-700 ease-out" style="width: 50%"></div>
-                                </div>
-                                <div class="flex justify-between w-full text-[9px] mt-1.5 font-bold tracking-wider">
-                                    <span id="team1-percent" class="text-cyan-400">50%</span>
-                                    <span id="team2-percent" class="text-amber-400">50%</span>
-                                </div>
-                            </div>
-
-                            <!-- Team 2 Option -->
-                            <button id="vote-team2-btn" class="group flex flex-col items-center gap-1 flex-1 focus:outline-none">
-                                <div class="relative w-12 h-12 rounded-full overflow-hidden border-2 border-red-500/80 shadow-lg group-hover:scale-110 active:scale-95 transition-all duration-300">
-                                    <img id="team2-flag" src="https://flagcdn.com/w160/at.png" class="w-full h-full object-cover" alt="T2">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-                                </div>
-                                <span id="team2-name" class="text-[11px] font-bold text-slate-300 mt-1">অস্ট্রিয়া</span>
-                            </button>
-                        </div>
-                    </div>
+                    <input id="avatar-file-input" type="file" accept="image/*" class="hidden">
+                </div>
+                <div>
+                    <input id="username-input" type="text" value="অতিথি" class="bg-transparent border-b border-slate-800 focus:border-emerald-500 text-xs font-bold text-slate-200 focus:outline-none py-0.5 w-24">
                 </div>
             </div>
+
+            <!-- Right Side: Interactive Action Tabs with custom attributes -->
+            <div class="flex items-center gap-2 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800/60 w-full sm:w-auto justify-around">
+                <button id="tab-chat-btn" data-tab="chat" class="tab-btn flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 transition-all">
+                    <i class="fas fa-comments"></i> চ্যাট আড্ডা
+                </button>
+                <button id="tab-vote-btn" data-tab="vote" class="tab-btn flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all">
+                    <i class="fas fa-square-poll-vertical"></i> লাইভ ভোট
+                </button>
+                <button id="tab-share-btn" data-tab="share" class="tab-btn flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all">
+                    <i class="fas fa-share-nodes"></i> শেয়ার
+                </button>
+            </div>
+
         </div>
 
-        <!-- Right: Realtime Animated Glassmorphic Live Chat Box -->
-        <div class="w-full lg:w-[380px] flex flex-col bg-slate-900/40 rounded-2xl shadow-2xl border border-slate-800/80 overflow-hidden h-[480px] backdrop-blur-md">
-            <!-- Header Status -->
-            <div class="bg-slate-950/60 px-4 py-3 border-b border-slate-800/60 flex justify-between items-center">
-                <span class="font-bold text-[11px] tracking-widest text-slate-400 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> লাইভ আড্ডা
-                </span>
-                <span id="online-counter" class="text-[9px] bg-slate-900 px-2 py-0.5 rounded text-slate-400 border border-slate-800 font-semibold">কানেক্ট হচ্ছে...</span>
-            </div>
-
-            <!-- Scrollable Chats -->
-            <div id="chat-messages" class="flex-1 p-3.5 overflow-y-auto space-y-3">
-                <!-- Message Elements -->
-            </div>
-
-            <!-- Typing indicator -->
-            <div id="typing-indicator" class="px-4 py-1.5 text-[10px] text-emerald-400 italic hidden bg-slate-950/30 border-t border-slate-900 flex items-center gap-1.5">
-                <span id="typing-user" class="font-semibold"></span> টাইপ করছেন...
-            </div>
-
-            <!-- Reply Panel -->
-            <div id="reply-preview" class="bg-slate-950 px-4 py-2 border-t border-slate-800 text-[11px] hidden flex justify-between items-center">
-                <div class="truncate text-slate-300">
-                    <i class="fas fa-reply text-emerald-500 mr-1"></i> <span id="reply-target-user" class="font-bold"></span>: 
-                    <span id="reply-target-text" class="italic opacity-80"></span>
+        <!-- TAB CONTENT AREA: Fixed Height -->
+        <div class="w-full h-[420px] relative">
+            
+            <!-- 1. LIVE CHAT TAB PANE (Active by default) -->
+            <div id="pane-chat" class="w-full h-full flex flex-col bg-slate-900/40 rounded-2xl border border-slate-800/80 overflow-hidden">
+                
+                <!-- Chat Header inside the Box (Prominent Active Count Show) -->
+                <div class="bg-slate-950/60 px-4 py-2 border-b border-slate-900/60 flex justify-between items-center shrink-0">
+                    <span class="text-[10px] text-emerald-400 font-semibold flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> লাইভ চ্যাট রুম
+                    </span>
+                    <span id="online-counter" class="text-[9px] bg-slate-900 px-2 py-0.5 rounded text-emerald-400 border border-slate-800 font-bold">কানেক্ট হচ্ছে...</span>
                 </div>
-                <button onclick="cancelReply()" class="text-rose-500 hover:text-rose-400 flex-shrink-0 ml-2"><i class="fas fa-times"></i></button>
-            </div>
 
-            <!-- Action Input Bar (Fixed to prevent layout shrinking) -->
-            <div class="p-2.5 bg-slate-950/80 border-t border-slate-900 flex flex-col gap-1.5">
-                <div class="flex items-center gap-1.5 bg-slate-900/90 rounded-full px-3 py-1.5 border border-slate-800">
-                    <!-- Photo Uploder -->
-                    <label class="flex-shrink-0 cursor-pointer text-slate-400 hover:text-emerald-500 w-7 h-7 flex items-center justify-center transition-colors">
-                        <i class="fas fa-image text-sm"></i>
-                        <input id="chat-image-input" type="file" accept="image/*" class="hidden">
-                    </label>
+                <!-- Messages Container -->
+                <div id="chat-messages" class="flex-1 p-3.5 overflow-y-auto space-y-3">
+                    <!-- Dynamic Messages load here -->
+                </div>
 
-                    <!-- Voice Memo -->
-                    <button id="voice-record-btn" class="flex-shrink-0 text-slate-400 hover:text-rose-500 w-7 h-7 flex items-center justify-center transition-colors">
-                        <i id="voice-icon" class="fas fa-microphone text-sm"></i>
-                    </button>
+                <!-- Typing notification -->
+                <div id="typing-indicator" class="px-4 py-1.5 text-[10px] text-emerald-400 italic hidden bg-slate-950/30 border-t border-slate-900 flex items-center gap-1.5 shrink-0">
+                    <span id="typing-user" class="font-semibold"></span> টাইপ করছেন...
+                </div>
 
-                    <!-- Message Field -->
-                    <input id="chat-text-input" type="text" placeholder="কিছু লিখুন..." class="flex-1 bg-transparent text-slate-200 placeholder-slate-500 text-xs focus:outline-none min-w-0 px-1">
+                <!-- Floating Emoji Panel -->
+                <div class="bg-slate-950/80 border-t border-slate-900 py-1.5 px-3 flex justify-around items-center gap-1 shrink-0">
+                    <button data-emoji="⚽" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">⚽</button>
+                    <button data-emoji="🔥" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">🔥</button>
+                    <button data-emoji="❤️" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">❤️</button>
+                    <button data-emoji="👏" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">👏</button>
+                    <button data-emoji="😮" class="emoji-btn hover:scale-125 transition-transform text-sm p-1">😮</button>
+                </div>
 
-                    <!-- Send Button (Stays intact and never shrinks) -->
-                    <button id="send-btn" class="flex-shrink-0 bg-emerald-500 text-slate-950 rounded-full w-7 h-7 flex items-center justify-center hover:bg-emerald-400 active:scale-95 transition shadow-lg">
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                    </button>
+                <!-- Quick Slang presets -->
+                <div class="bg-slate-950/40 py-1 px-3 flex gap-2 overflow-x-auto border-t border-slate-900 select-none shrink-0">
+                    <button data-sticker="গোল!!! ⚽" class="sticker-btn bg-slate-800 text-[9px] px-2.5 py-0.5 rounded-full hover:bg-emerald-600 hover:text-slate-950 transition-colors shrink-0 font-bold">গোল!!! ⚽</button>
+                    <button data-sticker="আরেহ! 😮" class="sticker-btn bg-slate-800 text-[9px] px-2.5 py-0.5 rounded-full hover:bg-emerald-600 hover:text-slate-950 transition-colors shrink-0 font-bold">আরেহ! 😮</button>
+                    <button data-sticker="ফাউল হয়েছে! 🟨" class="sticker-btn bg-slate-800 text-[9px] px-2.5 py-0.5 rounded-full hover:bg-emerald-600 hover:text-slate-950 transition-colors shrink-0 font-bold">ফাউল! 🟨</button>
+                    <button data-sticker="অসাধারণ শট! 🔥" class="sticker-btn bg-slate-800 text-[9px] px-2.5 py-0.5 rounded-full hover:bg-emerald-600 hover:text-slate-950 transition-colors shrink-0 font-bold">অসাধারণ! 🔥</button>
+                </div>
+
+                <!-- Reply Preview Bar -->
+                <div id="reply-preview" class="bg-slate-950 px-4 py-2 border-t border-slate-900 text-[11px] hidden flex justify-between items-center shrink-0">
+                    <div class="truncate text-slate-300">
+                        <i class="fas fa-reply text-emerald-500 mr-1"></i> <span id="reply-target-user" class="font-bold"></span>: 
+                        <span id="reply-target-text" class="italic opacity-80"></span>
+                    </div>
+                    <button id="cancel-reply-btn" class="text-rose-500 hover:text-rose-400 flex-shrink-0 ml-2"><i class="fas fa-times"></i></button>
+                </div>
+
+                <!-- Chat Action Inputs -->
+                <div id="input-bar-wrapper" class="p-2.5 bg-slate-950 border-t border-slate-900 flex flex-col gap-1.5 shrink-0">
+                    <div id="normal-input-bar" class="flex items-center gap-1.5 bg-slate-900/90 rounded-full px-3 py-1.5 border border-slate-800">
+                        <label class="flex-shrink-0 cursor-pointer text-slate-400 hover:text-emerald-500 w-7 h-7 flex items-center justify-center transition-colors">
+                            <i class="fas fa-image text-sm"></i>
+                            <input id="chat-image-input" type="file" accept="image/*" class="hidden">
+                        </label>
+                        <button id="voice-record-btn" class="flex-shrink-0 text-slate-400 hover:text-rose-500 w-7 h-7 flex items-center justify-center transition-colors">
+                            <i id="voice-icon" class="fas fa-microphone text-sm"></i>
+                        </button>
+                        <!-- GIF Picker Button -->
+                        <button id="toggle-gif-btn" class="flex-shrink-0 text-slate-400 hover:text-yellow-500 w-7 h-7 flex items-center justify-center transition-colors">
+                            <i class="fas fa-laugh-squint text-sm"></i>
+                        </button>
+                        <input id="chat-text-input" type="text" placeholder="কিছু লিখুন..." class="flex-1 bg-transparent text-slate-200 placeholder-slate-500 text-xs focus:outline-none min-w-0 px-1">
+                        <button id="send-btn" class="flex-shrink-0 bg-emerald-500 text-slate-950 rounded-full w-7 h-7 flex items-center justify-center hover:bg-emerald-400 transition shadow-lg">
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- Voice Record Wave Panel -->
+                    <div id="voice-recording-bar" class="hidden flex items-center justify-between bg-rose-950/60 rounded-full px-4 py-2 border border-rose-500/40">
+                        <div class="flex items-center gap-3">
+                            <span class="w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping"></span>
+                            <div class="flex items-end gap-0.5 h-5">
+                                <span class="eq-bar"></span>
+                                <span class="eq-bar"></span>
+                                <span class="eq-bar"></span>
+                                <span class="eq-bar"></span>
+                            </div>
+                            <span class="text-[10px] text-rose-300 font-bold uppercase">রেকর্ড হচ্ছে...</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="cancel-voice-btn" class="w-7 h-7 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center"><i class="fas fa-trash-alt text-xs"></i></button>
+                            <button id="finish-voice-btn" class="w-7 h-7 rounded-full bg-rose-500 text-white hover:bg-rose-400 flex items-center justify-center"><i class="fas fa-paper-plane text-xs"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- 2. VOTE POLL TAB PANE -->
+            <div id="pane-vote" class="w-full h-full bg-slate-900/40 rounded-2xl border border-slate-800/80 p-6 flex flex-col justify-center items-center hidden">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">লাইভ ভোট প্যানেল</h3>
+                <div class="w-full max-w-sm bg-slate-950/80 p-5 rounded-2xl border border-slate-800 flex flex-col gap-6">
+                    <div class="flex justify-around items-center">
+                        <button id="inner-vote-team1" class="group flex flex-col items-center gap-2">
+                            <div class="relative w-16 h-16 rounded-full overflow-hidden border-4 border-cyan-500/80 shadow-2xl group-hover:scale-110 transition-transform">
+                                <img id="inner-flag1" src="https://flagcdn.com/w160/ar.png" class="w-full h-full object-cover">
+                            </div>
+                            <span id="inner-name1" class="text-xs font-bold text-slate-300">আর্জেন্টিনা</span>
+                        </button>
+                        <span class="text-xs font-bold text-slate-500 uppercase">বনাম</span>
+                        <button id="inner-vote-team2" class="group flex flex-col items-center gap-2">
+                            <div class="relative w-16 h-16 rounded-full overflow-hidden border-4 border-red-500/80 shadow-2xl group-hover:scale-110 transition-transform">
+                                <img id="inner-flag2" src="https://flagcdn.com/w160/at.png" class="w-full h-full object-cover">
+                            </div>
+                            <span id="inner-name2" class="text-xs font-bold text-slate-300">অস্ট্রিয়া</span>
+                        </button>
+                    </div>
+                    <div class="w-full flex flex-col items-center">
+                        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex border border-slate-800">
+                            <div id="inner-bar1" class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full" style="width: 50%"></div>
+                            <div id="inner-bar2" class="bg-gradient-to-l from-red-500 to-amber-500 h-full" style="width: 50%"></div>
+                        </div>
+                        <div class="flex justify-between w-full text-[10px] mt-2 font-bold tracking-wider">
+                            <span id="inner-percent1" class="text-cyan-400">50%</span>
+                            <span id="inner-percent2" class="text-amber-400">50%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. SHARE TAB PANE -->
+            <div id="pane-share" class="w-full h-full bg-slate-900/40 rounded-2xl border border-slate-800/80 p-4 flex flex-col justify-center items-center hidden">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">বন্ধুদের সাথে শেয়ার করুন</h3>
+                <div class="w-full max-w-sm bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex flex-col gap-4 text-center">
+                    <p class="text-[11px] text-slate-400">নিচের লিঙ্কটি কপি করে বন্ধুদের চ্যাটে পাঠিয়ে দিন:</p>
+                    <div class="flex flex-col sm:flex-row items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-800 w-full min-w-0">
+                        <input id="share-link-input" type="text" readonly class="bg-transparent text-xs text-slate-300 flex-1 focus:outline-none truncate w-full">
+                        <button id="copy-share-btn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-[10px] px-3 py-1.5 rounded-lg transition-colors shrink-0 w-full sm:w-auto">
+                            COPY
+                        </button>
+                    </div>
+                    <div class="flex justify-center gap-4 mt-1">
+                        <a id="share-wa" target="_blank" class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"><i class="fab fa-whatsapp text-white text-sm"></i></a>
+                        <a id="share-fb" target="_blank" class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"><i class="fab fa-facebook-f text-white text-sm"></i></a>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- Firebase SDK Logic -->
+    <!-- 4. FLOATING GIF SEARCH MODAL (Tenor API Integration) -->
+    <div id="gif-modal" class="fixed inset-x-4 bottom-24 max-w-md mx-auto bg-slate-950 border border-slate-800 p-3 rounded-2xl shadow-2xl z-50 hidden">
+        <div class="flex justify-between items-center mb-2 border-b border-slate-900 pb-2">
+            <span class="text-xs font-bold text-yellow-500 uppercase"><i class="fas fa-search mr-1"></i> Search Tenor GIF</span>
+            <button id="close-gif-btn" class="text-slate-400 hover:text-slate-200 text-xs"><i class="fas fa-times-circle"></i></button>
+        </div>
+        <div class="flex gap-1.5 mb-2.5">
+            <input id="gif-search-query" type="text" placeholder="যেমন: Football, Goal, Win..." class="flex-1 bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none">
+            <button id="trigger-gif-search" class="bg-yellow-500 text-slate-950 font-bold text-xs px-3 rounded hover:bg-yellow-400 transition-colors">খুঁজুন</button>
+        </div>
+        <div id="gif-results-grid" class="grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto">
+            <!-- Dynamic GIF Search Results load here -->
+        </div>
+    </div>
+
+    <!-- Firebase & Custom Modules Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD_HBGuQSh_GzqrHqHbgdaoBikLZsK3Qqs",
@@ -234,132 +353,380 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const storage = getStorage(app);
 
-        // ImgBB API key
         const IMGBB_API_KEY = "4f29b88d8207f6e762c2c852d5c895f8";
 
-        // Generate Identity
-        let userId = localStorage.getItem('chat_user_id') || 'usr_' + Math.random().toString(36).substring(2, 9);
-        localStorage.setItem('chat_user_id', userId);
-        
-        let username = localStorage.getItem('chat_username') || 'অতিথি_' + Math.floor(1000 + Math.random() * 9000);
-        let userAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
-        
-        document.getElementById('username-input').value = username;
-        document.getElementById('user-avatar').src = userAvatar;
-
-        document.getElementById('username-input').addEventListener('change', (e) => {
-            username = e.target.value.trim() || 'অতিথি';
-            userAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
-            document.getElementById('user-avatar').src = userAvatar;
-            localStorage.setItem('chat_username', username);
-        });
-
-        let replyTarget = null;
-
-        // Custom Player Implementation
+        // ----------------- ১. সকল ডম ডিক্লারেশন শুরুতে (VARIABLE HOISTING FIX) -----------------
+        const textInput = document.getElementById('chat-text-input');
         const iframePlayer = document.getElementById('iframe-player');
         const videoPlayer = document.getElementById('video-player');
         const playerLoader = document.getElementById('player-loader');
         const customControls = document.getElementById('custom-controls');
-        
         const playPauseBtn = document.getElementById('play-pause-btn');
         const muteBtn = document.getElementById('mute-btn');
         const progressBar = document.getElementById('progress-bar');
         const progressContainer = document.getElementById('progress-container');
         const timeDisplay = document.getElementById('time-display');
         const fullscreenBtn = document.getElementById('fullscreen-btn');
+        
+        const adOverlay = document.getElementById('ad-overlay');
+        const adImage = document.getElementById('ad-image');
+        const adVideo = document.getElementById('ad-video');
 
-        let hlsInstance = null;
+        const normalInputBar = document.getElementById('normal-input-bar');
+        const voiceRecordingBar = document.getElementById('voice-recording-bar');
+        const recordBtn = document.getElementById('voice-record-btn');
+        const cancelVoiceBtn = document.getElementById('cancel-voice-btn');
+        const finishVoiceBtn = document.getElementById('finish-voice-btn');
 
-        function loadStream(type, url) {
-            playerLoader.classList.remove('hidden');
-            customControls.classList.add('hidden');
+        // Identity settings
+        let userId = localStorage.getItem('chat_user_id') || 'usr_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('chat_user_id', userId);
+        
+        let username = localStorage.getItem('chat_username') || 'অতিথি_' + Math.floor(1000 + Math.random() * 9000);
+        let userAvatar = localStorage.getItem('chat_avatar') || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+        
+        if (document.getElementById('username-input')) document.getElementById('username-input').value = username;
+        if (document.getElementById('user-avatar')) document.getElementById('user-avatar').src = userAvatar;
+
+        // Share links setup
+        const shareURL = window.location.origin + window.location.pathname;
+        if (document.getElementById('share-link-input')) document.getElementById('share-link-input').value = shareURL;
+        if (document.getElementById('share-wa')) document.getElementById('share-wa').href = `https://api.whatsapp.com/send?text=${encodeURIComponent('লাইভ খেলা দেখুন এখানে: ' + shareURL)}`;
+        if (document.getElementById('share-fb')) document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
+
+        let replyTarget = null; // Scoped safely inside the module
+
+        // ----------------- ২. ইভেন্ট লিসেনার বাইন্ডিংস (STANDARD ADD_EVENT_LISTENER) -----------------
+        
+        // Tab Switchers safely checked
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.getAttribute('data-tab');
+                switchTab(tabName);
+            });
+        });
+
+        function switchTab(tabName) {
+            const chatPane = document.getElementById('pane-chat');
+            const votePane = document.getElementById('pane-vote');
+            const sharePane = document.getElementById('pane-share');
             
+            if(chatPane) chatPane.classList.add('hidden');
+            if(votePane) votePane.classList.add('hidden');
+            if(sharePane) sharePane.classList.add('hidden');
+
+            const tabChat = document.getElementById('tab-chat-btn');
+            const tabVote = document.getElementById('tab-vote-btn');
+            const tabShare = document.getElementById('tab-share-btn');
+
+            if(tabChat) tabChat.className = "flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all";
+            if(tabVote) tabVote.className = "flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all";
+            if(tabShare) tabShare.className = "flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all";
+
+            const activePane = document.getElementById('pane-' + tabName);
+            const activeTabBtn = document.getElementById('tab-' + tabName + '-btn');
+            
+            if(activePane) activePane.classList.remove('hidden');
+            if(activeTabBtn) activeTabBtn.className = "flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 transition-all";
+        }
+
+        // Copy button
+        const copyBtn = document.getElementById('copy-share-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(shareURL);
+                alert('লিঙ্কটি কপি করা হয়েছে!');
+            });
+        }
+
+        // Floating reaction click
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const emoji = btn.getAttribute('data-emoji');
+                set(reactionRef, { emoji: emoji, timestamp: Date.now() });
+            });
+        });
+
+        // Stickers click
+        document.querySelectorAll('.sticker-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const stickerText = btn.getAttribute('data-sticker');
+                sendChatMessage(stickerText, null, null);
+            });
+        });
+
+        // GIF toggles
+        const gifToggle = document.getElementById('toggle-gif-btn');
+        if (gifToggle) {
+            gifToggle.addEventListener('click', () => toggleGifPicker());
+        }
+
+        const gifClose = document.getElementById('close-gif-btn');
+        if (gifClose) {
+            gifClose.addEventListener('click', () => {
+                const modal = document.getElementById('gif-modal');
+                if (modal) modal.classList.add('hidden');
+            });
+        }
+
+        const gifSearch = document.getElementById('trigger-gif-search');
+        if (gifSearch) {
+            gifSearch.addEventListener('click', () => {
+                const queryInput = document.getElementById('gif-search-query');
+                if (queryInput) {
+                    const query = queryInput.value.trim();
+                    if (query) fetchGIFsFromTenor(query);
+                }
+            });
+        }
+
+        function toggleGifPicker() {
+            const modal = document.getElementById('gif-modal');
+            if (modal) {
+                modal.classList.toggle('hidden');
+                if (!modal.classList.contains('hidden')) {
+                    fetchGIFsFromTenor("sports goal");
+                }
+            }
+        }
+
+        async function fetchGIFsFromTenor(query) {
+            const grid = document.getElementById('gif-results-grid');
+            if (!grid) return;
+            grid.innerHTML = `<div class="col-span-3 text-center text-[10px] text-slate-500 py-4"><i class="fas fa-spinner fa-spin mr-1"></i> GIF খোঁজা হচ্ছে...</div>`;
+            try {
+                const url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=LIVDTRZ9ORAB&client_key=live_stream_hub&limit=9`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                grid.innerHTML = '';
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach((item) => {
+                        const gifSrc = item.media_formats.tinygif.url;
+                        const card = document.createElement('div');
+                        card.className = "w-full h-14 rounded overflow-hidden border border-slate-800 hover:border-emerald-500 cursor-pointer transition-all";
+                        card.addEventListener('click', () => {
+                            sendChatMessage(null, gifSrc, null);
+                            const modal = document.getElementById('gif-modal');
+                            if (modal) modal.classList.add('hidden');
+                        });
+                        card.innerHTML = `<img src="${gifSrc}" class="w-full h-full object-cover">`;
+                        grid.appendChild(card);
+                    });
+                } else {
+                    grid.innerHTML = `<div class="col-span-3 text-center text-rose-400 text-[10px]">কিছু পাওয়া যায়নি।</div>`;
+                }
+            } catch (err) {
+                grid.innerHTML = `<div class="col-span-3 text-center text-rose-500 text-[10px]">GIF লোড করতে ব্যর্থ।</div>`;
+            }
+        }
+
+        // Profile updates
+        const usernameInput = document.getElementById('username-input');
+        if (usernameInput) {
+            usernameInput.addEventListener('change', (e) => {
+                username = e.target.value.trim() || 'অতিথি';
+                userAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+                const avatarImg = document.getElementById('user-avatar');
+                if (avatarImg) avatarImg.src = userAvatar;
+                localStorage.setItem('chat_username', username);
+                localStorage.setItem('chat_avatar', userAvatar);
+            });
+        }
+
+        const avatarContainer = document.getElementById('avatar-container');
+        if (avatarContainer) {
+            avatarContainer.addEventListener('click', () => {
+                const fileInput = document.getElementById('avatar-file-input');
+                if (fileInput) fileInput.click();
+            });
+        }
+
+        const fileInput = document.getElementById('avatar-file-input');
+        if (fileInput) {
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const avatarImg = document.getElementById('user-avatar');
+                    if (avatarImg) avatarImg.style.opacity = '0.3';
+                    const uploadedUrl = await uploadImageToImgBB(file);
+                    if (uploadedUrl) {
+                        userAvatar = uploadedUrl;
+                        if (avatarImg) avatarImg.src = userAvatar;
+                        localStorage.setItem('chat_avatar', userAvatar);
+                    } else {
+                        alert('প্রোফাইল পিকচার আপলোড ব্যর্থ হয়েছে।');
+                    }
+                    if (avatarImg) avatarImg.style.opacity = '1';
+                }
+            });
+        }
+
+        const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+        if (cancelReplyBtn) {
+            cancelReplyBtn.addEventListener('click', () => cancelReply());
+        }
+
+        function cancelReply() {
+            replyTarget = null;
+            const preview = document.getElementById('reply-preview');
+            if (preview) preview.classList.add('hidden');
+        }
+
+        // --- Stream Logic ---
+        let hlsInstance = null;
+        let isAdActive = false;
+
+        function loadStream(type, url, serverId) {
+            if (playerLoader) playerLoader.classList.remove('hidden');
+            if (customControls) customControls.classList.add('hidden');
+            
+            const viewerRef = ref(db, `sports_v2/active_viewers/${userId}`);
+            set(viewerRef, serverId);
+            onDisconnect(viewerRef).remove();
+
             if (type === 'iframe') {
-                videoPlayer.classList.add('hidden');
-                videoPlayer.pause();
-                iframePlayer.src = url;
-                iframePlayer.classList.remove('hidden');
-                playerLoader.classList.add('hidden');
+                if (videoPlayer) {
+                    videoPlayer.classList.add('hidden');
+                    videoPlayer.pause();
+                }
+                if (iframePlayer) {
+                    iframePlayer.src = url;
+                    iframePlayer.classList.remove('hidden');
+                }
+                if (playerLoader) playerLoader.classList.add('hidden');
             } else {
-                iframePlayer.classList.add('hidden');
-                iframePlayer.src = '';
-                videoPlayer.classList.remove('hidden');
-                customControls.classList.remove('hidden');
+                if (iframePlayer) {
+                    iframePlayer.classList.add('hidden');
+                    iframePlayer.src = '';
+                }
+                if (videoPlayer) {
+                    videoPlayer.classList.remove('hidden');
+                    if (customControls) customControls.classList.remove('hidden');
+                }
 
                 if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('.ts'))) {
                     if (hlsInstance) hlsInstance.destroy();
                     hlsInstance = new Hls();
                     hlsInstance.loadSource(url);
-                    hlsInstance.attachMedia(videoPlayer);
-                    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-                        videoPlayer.play();
-                        playerLoader.classList.add('hidden');
-                    });
+                    if (videoPlayer) {
+                        hlsInstance.attachMedia(videoPlayer);
+                        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                            videoPlayer.muted = isAdActive;
+                            videoPlayer.play();
+                            if (playerLoader) playerLoader.classList.add('hidden');
+                        });
+                    }
                 } else {
-                    videoPlayer.src = url;
-                    videoPlayer.addEventListener('loadeddata', () => {
-                        videoPlayer.play();
-                        playerLoader.classList.add('hidden');
-                    });
+                    if (videoPlayer) {
+                        videoPlayer.src = url;
+                        videoPlayer.addEventListener('loadeddata', () => {
+                            videoPlayer.muted = isAdActive;
+                            videoPlayer.play();
+                            if (playerLoader) playerLoader.classList.add('hidden');
+                        });
+                    }
                 }
             }
         }
 
-        // Custom Stream Events
-        playPauseBtn.onclick = () => {
-            if (videoPlayer.paused) {
-                videoPlayer.play();
-                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            } else {
-                videoPlayer.pause();
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-            }
-        };
+        if (playPauseBtn) {
+            playPauseBtn.addEventListener('click', () => {
+                if (videoPlayer) {
+                    if (videoPlayer.paused) {
+                        videoPlayer.play();
+                        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    } else {
+                        videoPlayer.pause();
+                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    }
+                }
+            });
+        }
 
-        muteBtn.onclick = () => {
-            videoPlayer.muted = !videoPlayer.muted;
-            muteBtn.innerHTML = videoPlayer.muted ? '<i class="fas fa-volume-mute text-rose-500"></i>' : '<i class="fas fa-volume-up"></i>';
-        };
+        if (muteBtn) {
+            muteBtn.addEventListener('click', () => {
+                if (videoPlayer) {
+                    videoPlayer.muted = !videoPlayer.muted;
+                    muteBtn.innerHTML = videoPlayer.muted ? '<i class="fas fa-volume-mute text-rose-500"></i>' : '<i class="fas fa-volume-up"></i>';
+                }
+            });
+        }
 
-        videoPlayer.addEventListener('timeupdate', () => {
-            if(videoPlayer.duration) {
-                const percentage = (videoPlayer.currentTime / videoPlayer.duration) * 100;
-                progressBar.style.width = `${percentage}%`;
-                
-                const curMins = Math.floor(videoPlayer.currentTime / 60).toString().padStart(2, '0');
-                const curSecs = Math.floor(videoPlayer.currentTime % 60).toString().padStart(2, '0');
-                const durMins = Math.floor(videoPlayer.duration / 60).toString().padStart(2, '0');
-                const durSecs = Math.floor(videoPlayer.duration % 60).toString().padStart(2, '0');
-                timeDisplay.innerText = `${curMins}:${curSecs} / ${durMins}:${durSecs}`;
-            }
-        });
+        if (videoPlayer) {
+            videoPlayer.addEventListener('timeupdate', () => {
+                if(videoPlayer.duration) {
+                    const percentage = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+                    if (progressBar) progressBar.style.width = `${percentage}%`;
+                    
+                    const curMins = Math.floor(videoPlayer.currentTime / 60).toString().padStart(2, '0');
+                    const curSecs = Math.floor(videoPlayer.currentTime % 60).toString().padStart(2, '0');
+                    const durMins = Math.floor(videoPlayer.duration / 60).toString().padStart(2, '0');
+                    const durSecs = Math.floor(videoPlayer.duration % 60).toString().padStart(2, '0');
+                    if (timeDisplay) timeDisplay.innerText = `${curMins}:${curSecs} / ${durMins}:${durSecs}`;
+                }
+            });
+        }
 
-        progressContainer.onclick = (e) => {
-            const rect = progressContainer.getBoundingClientRect();
-            const pos = (e.clientX - rect.left) / rect.width;
-            videoPlayer.currentTime = pos * videoPlayer.duration;
-        };
+        if (progressContainer) {
+            progressContainer.addEventListener('click', (e) => {
+                if (videoPlayer && videoPlayer.duration) {
+                    const rect = progressContainer.getBoundingClientRect();
+                    const pos = (e.clientX - rect.left) / rect.width;
+                    videoPlayer.currentTime = pos * videoPlayer.duration;
+                }
+            });
+        }
 
-        fullscreenBtn.onclick = () => {
-            if (!document.fullscreenElement) {
-                videoPlayer.parentElement.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
-        };
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => {
+                if (videoPlayer) {
+                    if (!document.fullscreenElement) {
+                        videoPlayer.parentElement.requestFullscreen();
+                    } else {
+                        document.exitFullscreen();
+                    }
+                }
+            });
+        }
 
-        // NEW ISOLATED NAMESPACE FOR FIREBASE (sports_v2/...)
+        // --- Database References ---
         const serversRef = ref(db, 'sports_v2/servers');
         const pollRef = ref(db, 'sports_v2/poll');
         const chatsRef = ref(db, 'sports_v2/chats');
         const typingRef = ref(db, `sports_v2/typing/${userId}`);
+        const reactionRef = ref(db, 'sports_v2/reactions');
+        const adRef = ref(db, 'sports_v2/ad');
 
-        // Fetch Servers
+        // Ad overlays safely checked
+        onValue(adRef, (snapshot) => {
+            const ad = snapshot.val();
+            if (ad && ad.active) {
+                isAdActive = true;
+                if (adOverlay) adOverlay.classList.remove('hidden');
+                if (videoPlayer) videoPlayer.muted = true;
+                
+                if (ad.type === 'image') {
+                    if (adVideo) { adVideo.classList.add('hidden'); adVideo.pause(); }
+                    if (adImage) { adImage.src = ad.url; adImage.classList.remove('hidden'); }
+                } else if (ad.type === 'video') {
+                    if (adImage) adImage.classList.add('hidden');
+                    if (adVideo) { adVideo.src = ad.url; adVideo.classList.remove('hidden'); adVideo.play(); }
+                }
+            } else {
+                isAdActive = false;
+                if (adOverlay) adOverlay.classList.add('hidden');
+                if (adVideo) { adVideo.pause(); adVideo.src = ''; }
+                if (adImage) adImage.src = '';
+                if (videoPlayer) videoPlayer.muted = false;
+            }
+        });
+
+        // Server list buttons render safely checked
         onValue(serversRef, (snapshot) => {
             const listDiv = document.getElementById('server-list');
+            if (!listDiv) return;
             listDiv.innerHTML = '';
             const data = snapshot.val();
             if (data) {
@@ -367,47 +734,81 @@
                 Object.keys(data).forEach((key) => {
                     const server = data[key];
                     const btn = document.createElement('button');
-                    btn.className = "bg-slate-800/80 hover:bg-emerald-500 text-[10px] font-bold px-3 py-1 rounded-full transition-all text-slate-200 hover:text-slate-950 border border-slate-700/60 active:scale-95";
+                    btn.className = "bg-slate-800 hover:bg-emerald-500 text-[10px] font-bold px-3.5 py-1 rounded-full transition-all text-slate-200 hover:text-slate-950 border border-slate-700/60 active:scale-95";
                     btn.innerText = server.name;
-                    btn.onclick = () => loadStream(server.type, server.url);
+                    btn.addEventListener('click', () => {
+                        loadStream(server.type, server.url, key);
+                    });
                     listDiv.appendChild(btn);
 
                     if (first) {
-                        loadStream(server.type, server.url);
+                        loadStream(server.type, server.url, key);
                         first = false;
                     }
                 });
             } else {
                 listDiv.innerHTML = `<span class="text-[10px] text-rose-400 font-semibold">কোনো সার্ভার সক্রিয় নেই</span>`;
-                playerLoader.classList.add('hidden');
+                if (playerLoader) playerLoader.classList.add('hidden');
             }
         });
 
-        // Poll listeners
+        // Sync support poll votes safely checked
         onValue(pollRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                document.getElementById('team1-name').innerText = data.team1.name;
-                document.getElementById('team1-flag').src = data.team1.flag;
-                document.getElementById('team2-name').innerText = data.team2.name;
-                document.getElementById('team2-flag').src = data.team2.flag;
+                const t1Name = document.getElementById('team1-name');
+                const t1Flag = document.getElementById('team1-flag');
+                const t2Name = document.getElementById('team2-name');
+                const t2Flag = document.getElementById('team2-flag');
+                const t1Bar = document.getElementById('team1-bar');
+                const t2Bar = document.getElementById('team2-bar');
+                const t1Percent = document.getElementById('team1-percent');
+                const t2Percent = document.getElementById('team2-percent');
+
+                if(t1Name) t1Name.innerText = data.team1.name;
+                if(t1Flag) t1Flag.src = data.team1.flag;
+                if(t2Name) t2Name.innerText = data.team2.name;
+                if(t2Flag) t2Flag.src = data.team2.flag;
 
                 const t1Votes = data.team1.votes || 0;
                 const t2Votes = data.team2.votes || 0;
                 const total = t1Votes + t2Votes;
 
-                let t1Percent = total > 0 ? Math.round((t1Votes / total) * 100) : 50;
-                let t2Percent = total > 0 ? (100 - t1Percent) : 50;
+                let t1PercentVal = total > 0 ? Math.round((t1Votes / total) * 100) : 50;
+                let t2PercentVal = total > 0 ? (100 - t1PercentVal) : 50;
 
-                document.getElementById('team1-bar').style.width = `${t1Percent}%`;
-                document.getElementById('team2-bar').style.width = `${t2Percent}%`;
-                document.getElementById('team1-percent').innerText = `${t1Percent}% (${t1Votes})`;
-                document.getElementById('team2-percent').innerText = `${t2Percent}% (${t2Votes})`;
+                if(t1Bar) t1Bar.style.width = `${t1PercentVal}%`;
+                if(t2Bar) t2Bar.style.width = `${t2PercentVal}%`;
+                if(t1Percent) t1Percent.innerText = `${t1PercentVal}% (${t1Votes})`;
+                if(t2Percent) t2Percent.innerText = `${t2PercentVal}% (${t2Votes})`;
+
+                // Tab Vote sync elements safely checked
+                const iName1 = document.getElementById('inner-name1');
+                const iFlag1 = document.getElementById('inner-flag1');
+                const iName2 = document.getElementById('inner-name2');
+                const iFlag2 = document.getElementById('inner-flag2');
+                const iBar1 = document.getElementById('inner-bar1');
+                const iBar2 = document.getElementById('inner-bar2');
+                const iPercent1 = document.getElementById('inner-percent1');
+                const iPercent2 = document.getElementById('inner-percent2');
+
+                if(iName1) iName1.innerText = data.team1.name;
+                if(iFlag1) iFlag1.src = data.team1.flag;
+                if(iName2) iName2.innerText = data.team2.name;
+                if(iFlag2) iFlag2.src = data.team2.flag;
+
+                if(iBar1) iBar1.style.width = `${t1PercentVal}%`;
+                if(iBar2) iBar2.style.width = `${t2PercentVal}%`;
+                if(iPercent1) iPercent1.innerText = `${t1PercentVal}% (${t1Votes})`;
+                if(iPercent2) iPercent2.innerText = `${t2PercentVal}% (${t2Votes})`;
             }
         });
 
-        document.getElementById('vote-team1-btn').onclick = () => vote('team1');
-        document.getElementById('vote-team2-btn').onclick = () => vote('team2');
+        // Add proper click listeners to poll buttons safely checked
+        const innerVoteT1 = document.getElementById('inner-vote-team1');
+        const innerVoteT2 = document.getElementById('inner-vote-team2');
+        if (innerVoteT1) innerVoteT1.addEventListener('click', () => vote('team1'));
+        if (innerVoteT2) innerVoteT2.addEventListener('click', () => vote('team2'));
 
         function vote(team) {
             const alreadyVoted = localStorage.getItem('voted_match_v2');
@@ -423,18 +824,20 @@
             }, { onlyOnce: true });
         }
 
-        // Active Connection Track
+        // Connection presence tracker (নিখুঁত লাইভ কাউন্ট শো করবে)
         const presenceRef = ref(db, `sports_v2/presence/${userId}`);
         set(presenceRef, true);
         onDisconnect(presenceRef).remove();
         onValue(ref(db, 'sports_v2/presence'), (snap) => {
             const count = snap.exists() ? Object.keys(snap.val()).length : 1;
-            document.getElementById('online-counter').innerText = `${count} জন একটিভ`;
+            const counter = document.getElementById('online-counter');
+            if (counter) counter.innerText = `${count} জন একটিভ`;
         });
 
-        // Chat Listener
+        // Chat logs listeners safely checked
         onValue(chatsRef, (snapshot) => {
             const container = document.getElementById('chat-messages');
+            if (!container) return;
             container.innerHTML = '';
             const data = snapshot.val();
             if (data) {
@@ -445,7 +848,7 @@
 
                     const bubbleHtml = `
                         <div class="animated-message flex items-start gap-2 ${isMe ? 'flex-row-reverse' : ''}">
-                            <img src="${msg.avatar}" class="w-8 h-8 rounded-full bg-slate-800 ${isAdmin ? 'ring-2 ring-yellow-400' : ''}">
+                            <img src="${msg.avatar}" class="w-8 h-8 rounded-full bg-slate-800 object-cover ${isAdmin ? 'ring-2 ring-yellow-400' : ''}">
                             <div class="max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}">
                                 <div class="flex items-center gap-1.5 mb-0.5">
                                     <span class="text-[10px] font-bold text-slate-500">${msg.username}</span>
@@ -456,32 +859,52 @@
                                         <b class="text-emerald-400">${msg.replyTo.sender}:</b> ${msg.replyTo.text}
                                     </div>
                                 ` : ''}
-                                <div class="p-2.5 rounded-xl text-xs ${isAdmin ? 'bg-gradient-to-r from-yellow-600 to-amber-700 text-white rounded-tl-none' : isMe ? 'bg-emerald-600 text-slate-950 font-semibold rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none'}">
+                                <div class="p-2.5 rounded-xl text-xs ${isAdmin ? 'admin-glow-card rounded-tl-none' : isMe ? 'bg-emerald-600 text-slate-950 font-semibold rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none'}">
                                     ${msg.text ? `<p class="break-all leading-normal">${msg.text}</p>` : ''}
                                     ${msg.imageUrl ? `<img src="${msg.imageUrl}" class="mt-2 rounded-lg max-h-36 object-cover cursor-pointer hover:opacity-90" onclick="window.open('${msg.imageUrl}')">` : ''}
                                     ${msg.audioUrl ? `<audio controls src="${msg.audioUrl}" class="mt-2 w-44 h-8 rounded bg-slate-950"></audio>` : ''}
                                 </div>
                                 <div class="flex items-center gap-2 mt-1 text-[9px] text-slate-500 font-semibold uppercase">
                                     <span>${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                    <button onclick="setReply('${msg.username}', '${msg.text || '[মিডিয়া फाइल]'}' , '${key}')" class="hover:text-emerald-400 font-bold">Reply</button>
+                                    <button class="reply-trigger-btn hover:text-emerald-400 font-bold" data-user="${msg.username}" data-text="${msg.text || '[Media]'}" data-key="${key}">Reply</button>
                                 </div>
                             </div>
                         </div>
                     `;
                     container.insertAdjacentHTML('beforeend', bubbleHtml);
                 });
+                
+                // Add reply trigger listeners safely
+                document.querySelectorAll('.reply-trigger-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const rUser = btn.getAttribute('data-user');
+                        const rText = btn.getAttribute('data-text');
+                        const rKey = btn.getAttribute('data-key');
+                        
+                        replyTarget = { sender: rUser, text: rText, key: rKey };
+                        const repUser = document.getElementById('reply-target-user');
+                        const repText = document.getElementById('reply-target-text');
+                        const repPreview = document.getElementById('reply-preview');
+                        
+                        if (repUser) repUser.innerText = rUser;
+                        if (repText) repText.innerText = rText;
+                        if (repPreview) repPreview.classList.remove('hidden');
+                        if (textInput) textInput.focus();
+                    });
+                });
+
                 container.scrollTop = container.scrollHeight;
             }
         });
 
-        // Typing Monitor
-        const textInput = document.getElementById('chat-text-input');
-        let typingTimeout;
-        textInput.addEventListener('input', () => {
-            set(typingRef, { username: username, isTyping: true });
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => set(typingRef, null), 1500);
-        });
+        // Typing monitor
+        if (textInput) {
+            textInput.addEventListener('input', () => {
+                set(typingRef, { username: username, isTyping: true });
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => set(typingRef, null), 1500);
+            });
+        }
 
         onValue(ref(db, 'sports_v2/typing'), (snapshot) => {
             const data = snapshot.val();
@@ -490,14 +913,31 @@
             
             if (data) {
                 const typers = Object.values(data).filter(t => t.username !== username);
-                if (typers.length > 0) {
+                if (typers.length > 0 && userSpan && indicator) {
                     userSpan.innerText = typers[0].username;
                     indicator.classList.remove('hidden');
                     return;
                 }
             }
-            indicator.classList.add('hidden');
+            if (indicator) indicator.classList.add('hidden');
         });
+
+        // Live Reactions
+        onValue(reactionRef, (snap) => {
+            const val = snap.val();
+            if (val) createFloatingEmoji(val.emoji);
+        });
+
+        function createFloatingEmoji(emojiStr) {
+            const container = document.getElementById('reactions-overlay');
+            if (!container) return;
+            const el = document.createElement('div');
+            el.className = "floating-emoji";
+            el.innerText = emojiStr;
+            el.style.left = `${Math.floor(Math.random() * 80) + 10}%`;
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 2500);
+        }
 
         async function uploadImageToImgBB(file) {
             const formData = new FormData();
@@ -514,70 +954,90 @@
             }
         }
 
-        // Voice Message Recording
-        let mediaRecorder;
-        let audioChunks = [];
-        const recordBtn = document.getElementById('voice-record-btn');
-        const voiceIcon = document.getElementById('voice-icon');
-        let isRecording = false;
-
-        recordBtn.onclick = async () => {
-            if (!isRecording) {
+        // Voice recorder module tracking safely checked
+        if (recordBtn) {
+            recordBtn.addEventListener('click', async () => {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     mediaRecorder = new MediaRecorder(stream);
                     audioChunks = [];
                     mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
                     
-                    mediaRecorder.onstop = async () => {
-                        voiceIcon.className = "fas fa-spinner fa-spin text-emerald-400";
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                        const audioName = `voice_${Date.now()}.mp3`;
-                        const fileRef = sRef(storage, `audio_v2/${audioName}`);
-                        try {
-                            const snapshot = await uploadBytes(fileRef, audioBlob);
-                            const downloadUrl = await getDownloadURL(snapshot.ref);
-                            sendChatMessage(null, null, downloadUrl);
-                        } catch (err) {
-                            alert("অডিও আপলোড করা সম্ভব হয়নি।");
-                        }
-                        voiceIcon.className = "fas fa-microphone";
-                    };
+                    if (normalInputBar) normalInputBar.classList.add('hidden');
+                    if (voiceRecordingBar) voiceRecordingBar.classList.remove('hidden');
 
                     mediaRecorder.start();
-                    isRecording = true;
-                    voiceIcon.className = "fas fa-stop text-rose-500 animate-pulse";
                 } catch (err) {
-                    alert("মাইক্রোফোনের অনুমতি দিন।");
+                    alert("মাইক্রোফোনের অনুমতি পাওয়া যায়নি।");
                 }
-            } else {
-                mediaRecorder.stop();
-                isRecording = false;
-            }
-        };
+            });
+        }
 
-        // Master Message Dispatch
-        document.getElementById('send-btn').onclick = () => {
-            const text = textInput.value.trim();
-            if (text) {
-                sendChatMessage(text, null, null);
-                textInput.value = '';
-                set(typingRef, null);
-            }
-        };
+        if (cancelVoiceBtn) {
+            cancelVoiceBtn.addEventListener('click', () => {
+                if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    mediaRecorder.onstop = null;
+                }
+                closeRecordingUX();
+            });
+        }
 
-        textInput.addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') document.getElementById('send-btn').click();
-        });
+        if (finishVoiceBtn) {
+            finishVoiceBtn.addEventListener('click', () => {
+                if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        const reader = new FileReader();
+                        reader.readAsDataURL(audioBlob);
+                        reader.onloadend = () => {
+                            sendChatMessage(null, null, reader.result);
+                        };
+                    };
+                    mediaRecorder.stop();
+                }
+                closeRecordingUX();
+            });
+        }
 
-        document.getElementById('chat-image-input').onchange = async (e) => {
-            const file = e.target.files[0];
-            if(file) {
-                const imgUrl = await uploadImageToImgBB(file);
-                if (imgUrl) sendChatMessage(null, imgUrl, null);
-            }
-        };
+        function closeRecordingUX() {
+            if (voiceRecordingBar) voiceRecordingBar.classList.add('hidden');
+            if (normalInputBar) normalInputBar.classList.remove('hidden');
+        }
 
+        // Send messages click trigger safely checked
+        const sendBtn = document.getElementById('send-btn');
+        if (sendBtn) {
+            sendBtn.addEventListener('click', () => {
+                if (textInput) {
+                    const text = textInput.value.trim();
+                    if (text) {
+                        sendChatMessage(text, null, null);
+                        textInput.value = '';
+                        set(typingRef, null);
+                    }
+                }
+            });
+        }
+
+        if (textInput) {
+            textInput.addEventListener('keypress', (e) => {
+                if(e.key === 'Enter' && sendBtn) sendBtn.click();
+            });
+        }
+
+        const chatImgInput = document.getElementById('chat-image-input');
+        if (chatImgInput) {
+            chatImgInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if(file) {
+                    const imgUrl = await uploadImageToImgBB(file);
+                    if (imgUrl) sendChatMessage(null, imgUrl, null);
+                }
+            });
+        }
+
+        // Master chat function safely inside isolated module scope
         function sendChatMessage(text = null, imageUrl = null, audioUrl = null) {
             const newChatRef = push(chatsRef);
             const msgObj = {
@@ -601,19 +1061,6 @@
             }
             set(newChatRef, msgObj);
         }
-
-        window.setReply = function(sender, text, key) {
-            replyTarget = { sender, text, key };
-            document.getElementById('reply-target-user').innerText = sender;
-            document.getElementById('reply-target-text').innerText = text;
-            document.getElementById('reply-preview').classList.remove('hidden');
-            textInput.focus();
-        };
-
-        window.cancelReply = function() {
-            replyTarget = null;
-            document.getElementById('reply-preview').classList.add('hidden');
-        };
     </script>
 </body>
 </html>
