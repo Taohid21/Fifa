@@ -132,24 +132,15 @@
         </div>
     </div>
 
-    <!-- Active Server Selectors & Proxy Bypass Switch -->
+    <!-- Active Server Selectors -->
     <div class="bg-slate-900/40 py-2.5 px-4 flex flex-wrap gap-3 items-center justify-center border-b border-slate-900/80 backdrop-blur-md">
         <div class="flex items-center gap-1.5">
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                <i class="fas fa-server text-emerald-500"></i> সার্ভার switch:
+                <i class="fas fa-server text-emerald-500"></i> সার্ভার সুইচ:
             </span>
             <div id="server-list" class="flex gap-1.5 flex-wrap">
                 <!-- Dynamic Server Buttons -->
             </div>
-        </div>
-        
-        <!-- CORS Proxy Switcher for Restricted High-Level Links -->
-        <div class="flex items-center gap-2 bg-slate-950/60 px-3 py-1 rounded-full border border-slate-800">
-            <label class="relative inline-flex items-center cursor-pointer select-none">
-                <input type="checkbox" id="use-proxy-toggle" class="sr-only peer">
-                <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500 peer-checked:after:bg-slate-950"></div>
-                <span class="ml-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider peer-checked:text-emerald-400">CORS Proxy</span>
-            </label>
         </div>
     </div>
 
@@ -389,7 +380,6 @@
         const recordBtn = document.getElementById('voice-record-btn');
         const cancelVoiceBtn = document.getElementById('cancel-voice-btn');
         const finishVoiceBtn = document.getElementById('finish-voice-btn');
-        const useProxyToggle = document.getElementById('use-proxy-toggle');
 
         let typingTimeout = null;
         let mediaRecorder = null;
@@ -483,10 +473,8 @@
             const span = document.createElement('span');
             span.className = 'floating-emoji';
             span.innerText = emoji;
-            // Place at random horizontal percentage positions
             span.style.left = `${Math.floor(Math.random() * 75) + 10}%`;
             overlay.appendChild(span);
-            // Auto remove after animation completes
             setTimeout(() => {
                 span.remove();
             }, 2200);
@@ -618,20 +606,8 @@
             if (preview) preview.classList.add('hidden');
         }
 
-        // --- Stream Proxy Helper (To play Restricted IPTV links) ---
-        function getPlayableUrl(url) {
-            if (useProxyToggle && useProxyToggle.checked) {
-                // Free CORS bypass gateway to load protected streams
-                return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-            }
-            return url;
-        }
-
-        // --- Stream Logic ---
-        let hlsInstance = null;
-        let isAdActive = false;
-
-        function loadStream(type, url, serverId) {
+        // --- Stream Logic with AUTOMATIC Proxy Fallback Retry ---
+        function loadStream(type, url, serverId, isFallback = false) {
             activeStreamUrl = url;
             activeStreamType = type;
             activeServerId = serverId;
@@ -643,7 +619,8 @@
             set(viewerRef, serverId);
             onDisconnect(viewerRef).remove();
 
-            const finalUrl = getPlayableUrl(url);
+            // If normal load fails, background try with CORS Proxy
+            const finalUrl = isFallback ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` : url;
 
             if (type === 'iframe') {
                 if (videoPlayer) {
@@ -651,7 +628,7 @@
                     videoPlayer.pause();
                 }
                 if (iframePlayer) {
-                    iframePlayer.src = url; // Iframes cannot be routed through CORS proxy directly
+                    iframePlayer.src = url;
                     iframePlayer.classList.remove('hidden');
                 }
                 if (playerLoader) playerLoader.classList.add('hidden');
@@ -682,16 +659,13 @@
                         });
                         hlsInstance.on(Hls.Events.ERROR, function (event, data) {
                             if (data.fatal) {
-                                switch (data.type) {
-                                    case Hls.ErrorTypes.NETWORK_ERROR:
-                                        hlsInstance.startLoad();
-                                        break;
-                                    case Hls.ErrorTypes.MEDIA_ERROR:
-                                        hlsInstance.recoverMediaError();
-                                        break;
-                                    default:
-                                        if (playerLoader) playerLoader.classList.add('hidden');
-                                        break;
+                                // If first normal attempt fails, retry automatically using proxy
+                                if (!isFallback) {
+                                    console.log("Normal HLS load failed. Retrying with CORS Proxy automatic bypass...");
+                                    loadStream(type, url, serverId, true);
+                                } else {
+                                    hlsInstance.destroy();
+                                    if (playerLoader) playerLoader.classList.add('hidden');
                                 }
                             }
                         });
@@ -699,26 +673,33 @@
                 } else {
                     if (videoPlayer) {
                         videoPlayer.src = finalUrl;
-                        videoPlayer.addEventListener('loadeddata', () => {
+                        
+                        const handleLoadSuccess = () => {
                             videoPlayer.muted = isAdActive;
                             videoPlayer.play().catch(() => {});
                             if (playerLoader) playerLoader.classList.add('hidden');
-                        });
-                        videoPlayer.addEventListener('error', () => {
-                            if (playerLoader) playerLoader.classList.add('hidden');
-                        });
+                            videoPlayer.removeEventListener('loadeddata', handleLoadSuccess);
+                            videoPlayer.removeEventListener('error', handleLoadError);
+                        };
+
+                        const handleLoadError = () => {
+                            videoPlayer.removeEventListener('loadeddata', handleLoadSuccess);
+                            videoPlayer.removeEventListener('error', handleLoadError);
+                            
+                            // Native error triggers automatic fallback
+                            if (!isFallback) {
+                                console.log("Native load failed. Retrying with CORS Proxy automatic bypass...");
+                                loadStream(type, url, serverId, true);
+                            } else {
+                                if (playerLoader) playerLoader.classList.add('hidden');
+                            }
+                        };
+
+                        videoPlayer.addEventListener('loadeddata', handleLoadSuccess);
+                        videoPlayer.addEventListener('error', handleLoadError);
                     }
                 }
             }
-        }
-
-        // Toggle proxy reloads active stream
-        if (useProxyToggle) {
-            useProxyToggle.addEventListener('change', () => {
-                if (activeStreamUrl) {
-                    loadStream(activeStreamType, activeStreamUrl, activeServerId);
-                }
-            });
         }
 
         if (playPauseBtn) {
@@ -992,46 +973,73 @@
             }
         });
 
-        // Optimized Typing monitor (Saves battery and cleans Firebase instantly)
+        // Bulletproof Real-time Typing Controller
         if (textInput) {
             textInput.addEventListener('input', () => {
                 const currentText = textInput.value.trim();
                 
                 if (currentText.length > 0) {
-                    set(typingRef, { username: username, isTyping: true });
+                    // Send status with current timestamp
+                    set(typingRef, { username: username, timestamp: Date.now() });
+                    onDisconnect(typingRef).remove(); // Auto cleanup when tab closes
+                    
                     clearTimeout(typingTimeout);
                     typingTimeout = setTimeout(() => {
                         set(typingRef, null);
-                    }, 2500);
+                    }, 3000);
                 } else {
-                    // Instantly clean typing indicator if user clears input text
+                    // Instantly clean typing indicator if text is empty
                     clearTimeout(typingTimeout);
                     set(typingRef, null);
                 }
             });
 
-            // If user unfocuses or leaves input, remove typing
+            // Clean if user unfocuses or leaves input bar
             textInput.addEventListener('blur', () => {
                 clearTimeout(typingTimeout);
                 set(typingRef, null);
             });
         }
 
+        // Active typing listener with smart 5-second filter
         onValue(ref(db, 'sports_v2/typing'), (snapshot) => {
             const data = snapshot.val();
             const indicator = document.getElementById('typing-indicator');
             const userSpan = document.getElementById('typing-user');
             
             if (data) {
-                const typers = Object.values(data).filter(t => t.username !== username);
-                if (typers.length > 0 && userSpan && indicator) {
-                    userSpan.innerText = typers[0].username;
+                const now = Date.now();
+                // Filter only typers who are NOT the current user AND updated within the last 5 seconds
+                const activeTypers = Object.values(data).filter(t => t.username !== username && (now - t.timestamp < 5000));
+                
+                if (activeTypers.length > 0 && userSpan && indicator) {
+                    userSpan.innerText = activeTypers[0].username;
                     indicator.classList.remove('hidden');
                     return;
                 }
             }
             if (indicator) indicator.classList.add('hidden');
         });
+
+        // Local loop checker to remove ghost typing signs instantly (Runs every 2 seconds)
+        setInterval(() => {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator && !indicator.classList.contains('hidden')) {
+                const typingDbRef = ref(db, 'sports_v2/typing');
+                onValue(typingDbRef, (snapshot) => {
+                    const data = snapshot.val();
+                    const now = Date.now();
+                    if (data) {
+                        const activeTypers = Object.values(data).filter(t => t.username !== username && (now - t.timestamp < 5000));
+                        if (activeTypers.length === 0) {
+                            indicator.classList.add('hidden');
+                        }
+                    } else {
+                        indicator.classList.add('hidden');
+                    }
+                }, { onlyOnce: true });
+            }
+        }, 2000);
 
         async function uploadImageToImgBB(file) {
             const formData = new FormData();
