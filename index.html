@@ -680,7 +680,6 @@
                                         hlsInstance.recoverMediaError();
                                         break;
                                     default:
-                                        // Standard Fallback in case of absolute HLS stream failure
                                         videoPlayer.src = url;
                                         break;
                                 }
@@ -785,7 +784,11 @@
                 if (adOverlay) adOverlay.classList.add('hidden');
                 if (adVideo) { adVideo.pause(); adVideo.src = ''; }
                 if (adImage) adImage.src = '';
-                if (videoPlayer) videoPlayer.muted = false;
+                if (videoPlayer) {
+                    videoPlayer.muted = false;
+                    // Safari-like browsers requiring user gestures to play
+                    videoPlayer.play().catch(() => {});
+                }
             }
         });
 
@@ -944,26 +947,52 @@
             }
         });
 
-        // Typing Monitor logic (Reliable state management)
+        // Real-time typing monitors (OnDisconnect removal ensures clean active state)
         onDisconnect(typingRef).remove();
 
         if (textInput) {
-            textInput.addEventListener('input', () => {
-                set(typingRef, { username: username, isTyping: true });
+            const stopTyping = () => {
                 clearTimeout(typingTimeout);
-                typingTimeout = setTimeout(() => {
-                    set(typingRef, null);
-                }, 1500);
+                set(typingRef, null);
+            };
+
+            textInput.addEventListener('input', () => {
+                const text = textInput.value.trim();
+                
+                if (text === '') {
+                    stopTyping();
+                    return;
+                }
+
+                set(typingRef, { 
+                    username: username, 
+                    isTyping: true, 
+                    timestamp: Date.now() 
+                });
+
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(stopTyping, 1200);
             });
+
+            textInput.addEventListener('blur', stopTyping);
         }
 
+        // Typing Monitor Observer (Filters out anything older than 3 seconds)
         onValue(ref(db, 'sports_v2/typing'), (snapshot) => {
             const data = snapshot.val();
             const indicator = document.getElementById('typing-indicator');
             const userSpan = document.getElementById('typing-user');
             
             if (data) {
-                const typers = Object.values(data).filter(t => t && t.isTyping && t.username !== username);
+                const now = Date.now();
+                const typers = Object.values(data).filter(t => 
+                    t && 
+                    t.isTyping === true && 
+                    t.username !== username && 
+                    t.timestamp && 
+                    (now - t.timestamp < 3000)
+                );
+                
                 if (typers.length > 0 && userSpan && indicator) {
                     userSpan.innerText = typers[0].username;
                     indicator.classList.remove('hidden');
@@ -1048,6 +1077,7 @@
                     if (text) {
                         sendChatMessage(text, null, null);
                         textInput.value = '';
+                        clearTimeout(typingTimeout);
                         set(typingRef, null);
                     }
                 }
@@ -1071,7 +1101,7 @@
             });
         }
 
-        // Master chat function inside safe scope
+        // Master chat function safely inside isolated module scope
         function sendChatMessage(text = null, imageUrl = null, audioUrl = null) {
             const newChatRef = push(chatsRef);
             const msgObj = {
